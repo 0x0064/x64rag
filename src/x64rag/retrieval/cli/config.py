@@ -1,0 +1,280 @@
+from __future__ import annotations
+
+import os
+import tomllib
+from pathlib import Path
+from typing import Any
+
+from x64rag.retrieval.cli.constants import CONFIG_FILE, ENV_FILE, ConfigError, load_dotenv
+from x64rag.retrieval.common.language_model import LanguageModelClientConfig, LanguageModelConfig
+from x64rag.retrieval.modules.ingestion.embeddings.base import BaseEmbeddings
+from x64rag.retrieval.modules.ingestion.embeddings.cohere import CohereEmbeddings
+from x64rag.retrieval.modules.ingestion.embeddings.openai import OpenAIEmbeddings
+from x64rag.retrieval.modules.ingestion.embeddings.sparse.fastembed import FastEmbedSparseEmbeddings
+from x64rag.retrieval.modules.ingestion.embeddings.voyage import VoyageEmbeddings
+from x64rag.retrieval.modules.ingestion.vision.anthropic import AnthropicVision
+from x64rag.retrieval.modules.ingestion.vision.openai import OpenAIVision
+from x64rag.retrieval.modules.retrieval.search.reranking.cohere import CohereReranking
+from x64rag.retrieval.modules.retrieval.search.reranking.voyage import VoyageReranking
+from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewriter
+from x64rag.retrieval.modules.retrieval.search.rewriting.multi_query import MultiQueryRewriter
+from x64rag.retrieval.modules.retrieval.search.rewriting.step_back import StepBackRewriter
+from x64rag.retrieval.server import (
+    GenerationConfig,
+    IngestionConfig,
+    PersistenceConfig,
+    RagServerConfig,
+    RetrievalConfig,
+)
+from x64rag.retrieval.stores.metadata.sqlalchemy import SQLAlchemyMetadataStore
+from x64rag.retrieval.stores.vector.qdrant import QdrantVectorStore
+
+
+def _get_api_key(env_var: str, provider_name: str) -> str:
+    key = os.environ.get(env_var, "")
+    if not key:
+        raise ConfigError(f"{env_var} not set — required for {provider_name}. Add it to {ENV_FILE}")
+    return key
+
+
+def _build_vector_store(cfg: dict[str, Any]) -> QdrantVectorStore:
+    provider = cfg.get("vector_store", "qdrant")
+    if provider != "qdrant":
+        raise ConfigError(f"Unknown vector store: {provider!r}. Supported: qdrant")
+    return QdrantVectorStore(
+        url=cfg.get("url", "http://localhost:6333"),
+        collection=cfg.get("collection", "knowledge"),
+    )
+
+
+_EMBEDDINGS_KEYS = {
+    "openai": "OPENAI_API_KEY",
+    "voyage": "VOYAGE_API_KEY",
+    "cohere": "COHERE_API_KEY",
+}
+
+_EMBEDDINGS_DEFAULTS = {
+    "openai": "text-embedding-3-small",
+    "voyage": "voyage-3",
+    "cohere": "embed-english-v3.0",
+}
+
+
+def _build_embeddings(cfg: dict[str, Any]) -> BaseEmbeddings:
+    provider = cfg.get("embeddings", "openai")
+    env_var = _EMBEDDINGS_KEYS.get(provider)
+    if env_var is None:
+        raise ConfigError(f"Unknown embeddings provider: {provider!r}. Supported: {', '.join(_EMBEDDINGS_KEYS)}")
+    api_key = _get_api_key(env_var, provider)
+    model = cfg.get("model", _EMBEDDINGS_DEFAULTS[provider])
+
+    if provider == "openai":
+        return OpenAIEmbeddings(api_key=api_key, model=model)
+    if provider == "voyage":
+        return VoyageEmbeddings(api_key=api_key, model=model)
+    return CohereEmbeddings(api_key=api_key, model=model)
+
+
+_VISION_KEYS = {
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openai": "OPENAI_API_KEY",
+}
+
+_VISION_DEFAULTS = {
+    "anthropic": "claude-sonnet-4-20250514",
+    "openai": "gpt-4o",
+}
+
+
+def _build_vision(cfg: dict[str, Any]):
+    provider = cfg.get("vision")
+    if not provider:
+        return None
+    env_var = _VISION_KEYS.get(provider)
+    if env_var is None:
+        raise ConfigError(f"Unknown vision provider: {provider!r}. Supported: {', '.join(_VISION_KEYS)}")
+    api_key = _get_api_key(env_var, provider)
+    model = cfg.get("vision_model", _VISION_DEFAULTS[provider])
+
+    if provider == "anthropic":
+        return AnthropicVision(api_key=api_key, model=model)
+    return OpenAIVision(api_key=api_key, model=model)
+
+
+_RERANKER_KEYS = {
+    "voyage": "VOYAGE_API_KEY",
+    "cohere": "COHERE_API_KEY",
+}
+
+_RERANKER_DEFAULTS = {
+    "voyage": "rerank-2.5-lite",
+    "cohere": "rerank-english-v3.0",
+}
+
+
+def _build_reranker(cfg: dict[str, Any]):
+    provider = cfg.get("reranker")
+    if not provider:
+        return None
+    env_var = _RERANKER_KEYS.get(provider)
+    if env_var is None:
+        raise ConfigError(f"Unknown reranker: {provider!r}. Supported: {', '.join(_RERANKER_KEYS)}")
+    api_key = _get_api_key(env_var, provider)
+    model = cfg.get("reranker_model", _RERANKER_DEFAULTS[provider])
+
+    if provider == "voyage":
+        return VoyageReranking(api_key=api_key, model=model)
+    return CohereReranking(api_key=api_key, model=model)
+
+
+def _build_query_rewriter(cfg: dict[str, Any]):
+    rewriter = cfg.get("rewriter")
+    if not rewriter:
+        return None
+
+    provider = cfg.get("rewriter_provider")
+    if not provider:
+        raise ConfigError("[retrieval] rewriter requires 'rewriter_provider'")
+    model = cfg.get("rewriter_model")
+    if not model:
+        raise ConfigError("[retrieval] rewriter requires 'rewriter_model'")
+
+    env_var = _GENERATION_KEYS.get(provider)
+    if env_var is None:
+        raise ConfigError(f"Unknown rewriter provider: {provider!r}. Supported: {', '.join(_GENERATION_KEYS)}")
+    api_key = _get_api_key(env_var, provider)
+
+    lm_config = LanguageModelConfig(
+        client=LanguageModelClientConfig(provider=provider, model=model, api_key=api_key),
+    )
+
+    rewriters = {
+        "hyde": HyDeRewriter,
+        "multi_query": MultiQueryRewriter,
+        "step_back": StepBackRewriter,
+    }
+    rewriter_cls = rewriters.get(rewriter)
+    if rewriter_cls is None:
+        raise ConfigError(f"Unknown rewriter: {rewriter!r}. Supported: {', '.join(rewriters)}")
+    return rewriter_cls(lm_config=lm_config)
+
+
+_GENERATION_KEYS = {
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openai": "OPENAI_API_KEY",
+}
+
+_GENERATION_DEFAULTS = {
+    "anthropic": "claude-sonnet-4-20250514",
+    "openai": "gpt-4o",
+}
+
+
+def _build_generation_config(cfg: dict[str, Any]) -> GenerationConfig:
+    provider = cfg.get("provider")
+    if not provider:
+        raise ConfigError("[generation] requires 'provider' (anthropic or openai)")
+    env_var = _GENERATION_KEYS.get(provider)
+    if env_var is None:
+        raise ConfigError(f"Unknown generation provider: {provider!r}. Supported: {', '.join(_GENERATION_KEYS)}")
+
+    api_key = _get_api_key(env_var, provider)
+    model = cfg.get("model", _GENERATION_DEFAULTS[provider])
+
+    lm_config = LanguageModelConfig(
+        client=LanguageModelClientConfig(
+            provider=provider,
+            model=model,
+            api_key=api_key,
+        ),
+    )
+
+    relevance_gate_lm = None
+    if cfg.get("relevance_gate_enabled"):
+        rg_provider = cfg.get("relevance_gate_provider", provider)
+        rg_model = cfg.get("relevance_gate_model", model)
+        rg_env_var = _GENERATION_KEYS.get(rg_provider)
+        if rg_env_var is None:
+            raise ConfigError(f"Unknown relevance_gate_provider: {rg_provider!r}")
+        rg_api_key = _get_api_key(rg_env_var, rg_provider)
+        relevance_gate_lm = LanguageModelConfig(
+            client=LanguageModelClientConfig(provider=rg_provider, model=rg_model, api_key=rg_api_key),
+        )
+
+    return GenerationConfig(
+        lm_config=lm_config,
+        system_prompt=cfg.get("system_prompt", GenerationConfig.system_prompt),
+        grounding_enabled=cfg.get("grounding_enabled", False),
+        grounding_threshold=cfg.get("grounding_threshold", 0.5),
+        relevance_gate_enabled=cfg.get("relevance_gate_enabled", False),
+        relevance_gate_model=relevance_gate_lm,
+        guiding_enabled=cfg.get("guiding_enabled", False),
+    )
+
+
+def _build_metadata_store(cfg: dict[str, Any]) -> SQLAlchemyMetadataStore:
+    url = cfg.get("url")
+    if not url:
+        raise ConfigError("[persistence.metadata] requires 'url'")
+    return SQLAlchemyMetadataStore(url=url)
+
+
+def load_config(config_path: str | None = None) -> RagServerConfig:
+    """Load TOML config + .env, build RagServerConfig."""
+    path = Path(config_path) if config_path else CONFIG_FILE
+    if not path.exists():
+        raise ConfigError(f"Config not found: {path}\nRun 'x64rag retrieval init' to create it.")
+
+    env_path = path.parent / ".env" if config_path else ENV_FILE
+    load_dotenv(env_path)
+
+    with open(path, "rb") as f:
+        toml = tomllib.load(f)
+
+    persistence_cfg = toml.get("persistence", {})
+    if not persistence_cfg:
+        raise ConfigError("[persistence] section required in config.toml")
+
+    vector_store = _build_vector_store(persistence_cfg)
+    metadata_store = None
+    if "metadata" in persistence_cfg:
+        metadata_store = _build_metadata_store(persistence_cfg["metadata"])
+
+    ingestion_cfg = toml.get("ingestion", {})
+    if not ingestion_cfg:
+        raise ConfigError("[ingestion] section required in config.toml")
+
+    embeddings = _build_embeddings(ingestion_cfg)
+    sparse_embeddings = FastEmbedSparseEmbeddings() if ingestion_cfg.get("sparse_embeddings") else None
+
+    ingestion = IngestionConfig(
+        embeddings=embeddings,
+        vision=_build_vision(ingestion_cfg),
+        chunk_size=ingestion_cfg.get("chunk_size", 500),
+        chunk_overlap=ingestion_cfg.get("chunk_overlap", 50),
+        parent_chunk_size=ingestion_cfg.get("parent_chunk_size", 0),
+        parent_chunk_overlap=ingestion_cfg.get("parent_chunk_overlap", 200),
+        contextual_chunking=ingestion_cfg.get("contextual_chunking", True),
+        sparse_embeddings=sparse_embeddings,
+    )
+
+    retrieval_cfg = toml.get("retrieval", {})
+    retrieval = RetrievalConfig(
+        top_k=retrieval_cfg.get("top_k", 5),
+        bm25_enabled=retrieval_cfg.get("bm25_enabled", False),
+        reranker=_build_reranker(retrieval_cfg),
+        query_rewriter=_build_query_rewriter(retrieval_cfg),
+    )
+
+    generation_cfg = toml.get("generation")
+    generation = _build_generation_config(generation_cfg) if generation_cfg else GenerationConfig()
+
+    return RagServerConfig(
+        persistence=PersistenceConfig(
+            vector_store=vector_store,
+            metadata_store=metadata_store,
+        ),
+        ingestion=ingestion,
+        retrieval=retrieval,
+        generation=generation,
+    )

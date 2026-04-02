@@ -1,0 +1,97 @@
+[project]
+name = "x64rag"
+version = "0.1.0"
+description = "x64rag"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    {name = "frndvrgs"},
+]
+dependencies = [
+    "openai>=2.30.0",
+    "anthropic>=0.86.0",
+    "qdrant-client>=1.17.1",
+    "sqlalchemy[asyncio]>=2.0.48",
+    "asyncpg>=0.31.0",
+    "aiosqlite>=0.22.1",
+    "pymupdf>=1.27.2.2",
+    "rank-bm25>=0.2.2",
+    "pydantic>=2.12.5",
+    "scikit-learn>=1.8.0",
+    "voyageai>=0.3.7",
+    "cohere>=5.21.1",
+    "baml-py==0.220.0",
+    "lxml>=6.0.2",
+    "fastembed>=0.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.8",
+    "poethepoet>=0.42.1",
+    "mypy>=1.19.1",
+]
+graph = [
+    "neo4j>=6.1.0",
+]
+cli = [
+    "click>=8.3.1",
+]
+
+[project.scripts]
+x64rag = "x64rag.cli:main"
+x64rag-retrieval = "x64rag.retrieval.cli:main"
+x64rag-reasoning = "x64rag.reasoning.cli:main"
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+exclude = ["src/x64rag/retrieval/baml/baml_client", "src/x64rag/reasoning/baml/baml_client"]
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = ["src/x64rag/retrieval/baml/baml_client", "src/x64rag/reasoning/baml/baml_client"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/x64rag/__init__.py" = ["E402", "F401", "F403", "F811"]
+"src/x64rag/cli.py" = ["F401"]
+"src/x64rag/retrieval/__init__.py" = ["E402"]
+"src/x64rag/retrieval/cli/__init__.py" = ["F401"]
+"src/x64rag/reasoning/__init__.py" = ["E402"]
+"src/x64rag/reasoning/cli/__init__.py" = ["F401"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["src"]
+
+[tool.poe.tasks]
+format = "ruff format ."
+check = "ruff check ."
+"check:fix" = "ruff check . --fix"
+typecheck = "mypy src/"
+test = "pytest"
+"test:cov" = "pytest --cov=x64rag --cov-report=term-missing"
+pcu = "python scripts/pcu.py check"
+"pcu:upgrade" = "python scripts/pcu.py upgrade"
+"baml:generate:retrieval" = "baml-cli generate --from src/x64rag/retrieval/baml_src"
+"baml:generate:reasoning" = "baml-cli generate --from src/x64rag/reasoning/baml_src"
+"baml:test:retrieval" = "baml test --from src/x64rag/retrieval/baml_src"
+"baml:test:reasoning" = "baml test --from src/x64rag/reasoning/baml_src"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/x64rag"]
+
+[tool.hatch.build]
+exclude = ["**/test_*.py", "**/__pycache__", "**/*.pyc"]

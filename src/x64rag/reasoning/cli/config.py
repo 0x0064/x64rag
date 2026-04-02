@@ -1,0 +1,121 @@
+from __future__ import annotations
+
+import os
+import tomllib
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal
+
+from x64rag.reasoning.cli.constants import CONFIG_FILE, ENV_FILE, ConfigError, load_dotenv
+from x64rag.reasoning.common.language_model import LanguageModelClientConfig, LanguageModelConfig
+
+if TYPE_CHECKING:
+    from x64rag.reasoning.modules.analysis.service import AnalysisService
+    from x64rag.reasoning.modules.classification.service import ClassificationService
+    from x64rag.reasoning.modules.compliance.service import ComplianceService
+    from x64rag.reasoning.modules.evaluation.service import EvaluationService
+
+
+_LM_API_KEYS = {
+    "anthropic": "ANTHROPIC_API_KEY",
+    "openai": "OPENAI_API_KEY",
+}
+
+_LM_DEFAULTS = {
+    "anthropic": "claude-sonnet-4-20250514",
+    "openai": "gpt-4o",
+}
+
+
+def _get_api_key(env_var: str, provider_name: str) -> str:
+    key = os.environ.get(env_var, "")
+    if not key:
+        raise ConfigError(f"{env_var} not set — required for {provider_name}. Add it to {ENV_FILE}")
+    return key
+
+
+def _build_lm_client_config(cfg: dict[str, Any]) -> LanguageModelClientConfig:
+    provider = cfg.get("provider")
+    if not provider:
+        raise ConfigError("[language_model] requires 'provider' (anthropic or openai)")
+
+    env_var = _LM_API_KEYS.get(provider)
+    if env_var is None:
+        raise ConfigError(f"Unknown language model provider: {provider!r}. Supported: {', '.join(_LM_API_KEYS)}")
+
+    api_key_override = os.environ.get("X64RAG_API_KEY")
+    api_key = api_key_override or _get_api_key(env_var, provider)
+
+    model_override = os.environ.get("X64RAG_MODEL")
+    model = model_override or cfg.get("model", _LM_DEFAULTS[provider])
+
+    return LanguageModelClientConfig(
+        provider=provider,
+        model=model,
+        api_key=api_key,
+        max_tokens=cfg.get("max_tokens", 4096),
+        temperature=cfg.get("temperature", 0.0),
+    )
+
+
+def build_lm_config(toml: dict[str, Any]) -> LanguageModelConfig:
+    """Build LanguageModelConfig from [language_model] section."""
+    lm_cfg = toml.get("language_model", {})
+    if not lm_cfg:
+        raise ConfigError("[language_model] section required in config.toml")
+
+    provider_override = os.environ.get("X64RAG_PROVIDER")
+    if provider_override:
+        lm_cfg = {**lm_cfg, "provider": provider_override}
+
+    client = _build_lm_client_config(lm_cfg)
+
+    fallback = None
+    strategy: Literal["primary_only", "fallback"] = "primary_only"
+    fallback_cfg = lm_cfg.get("fallback")
+    if fallback_cfg:
+        fallback = _build_lm_client_config(fallback_cfg)
+        strategy = "fallback"
+
+    return LanguageModelConfig(
+        client=client,
+        fallback=fallback,
+        max_retries=lm_cfg.get("max_retries", 3),
+        strategy=strategy,
+    )
+
+
+def build_analysis_service(toml: dict[str, Any]) -> AnalysisService:
+    from x64rag.reasoning.modules.analysis.service import AnalysisService as _AnalysisService
+
+    return _AnalysisService(lm_config=build_lm_config(toml))
+
+
+def build_classification_service(toml: dict[str, Any]) -> ClassificationService:
+    from x64rag.reasoning.modules.classification.service import ClassificationService as _ClassificationService
+
+    return _ClassificationService(lm_config=build_lm_config(toml))
+
+
+def build_compliance_service(toml: dict[str, Any]) -> ComplianceService:
+    from x64rag.reasoning.modules.compliance.service import ComplianceService as _ComplianceService
+
+    return _ComplianceService(lm_config=build_lm_config(toml))
+
+
+def build_evaluation_service(toml: dict[str, Any]) -> EvaluationService:
+    from x64rag.reasoning.modules.evaluation.service import EvaluationService as _EvaluationService
+
+    return _EvaluationService(lm_config=build_lm_config(toml))
+
+
+def load_config(config_path: str | None = None) -> dict[str, Any]:
+    """Load TOML config + .env, return raw TOML dict."""
+    path = Path(config_path) if config_path else CONFIG_FILE
+    if not path.exists():
+        raise ConfigError(f"Config not found: {path}\nRun 'x64rag reasoning init' to create it.")
+
+    env_path = path.parent / ".env" if config_path else ENV_FILE
+    load_dotenv(env_path)
+
+    with open(path, "rb") as f:
+        return tomllib.load(f)

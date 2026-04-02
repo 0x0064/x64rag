@@ -1,0 +1,13 @@
+from typing import Protocol
+
+from x64rag.retrieval.common.models import RetrievedChunk
+
+
+class BaseChunkRefiner(Protocol):
+    """Protocol for post-retrieval chunk refinement.
+
+    Refiners take a query and retrieved chunks, and return refined chunks.
+    Same shape in and out — chunk metadata is preserved.
+    """
+
+    async def refine(self, query: str, chunks: list[RetrievedChunk]) -> list[RetrievedChunk]: ...

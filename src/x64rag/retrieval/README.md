@@ -1,0 +1,429 @@
+# x64rag — Retrieval SDK
+
+Composable retrieval-augmented generation. Ingest documents, search them, generate answers.
+
+For setup, environment variables, and observability see the [main README](../../README.md). For concepts and architecture see the [retrieval documentation](../../docs/retrieval.md).
+
+## RagServer
+
+```python
+from x64rag.retrieval import (
+    RagServer, RagServerConfig,
+    PersistenceConfig, IngestionConfig, RetrievalConfig, GenerationConfig,
+    QdrantVectorStore, SQLAlchemyMetadataStore,
+    PostgresDocumentStore, Neo4jGraphStore,
+    OpenAIEmbeddings, FastEmbedSparseEmbeddings, AnthropicVision,
+    CohereReranking, HyDeRewriter,
+    LanguageModelConfig, LanguageModelClientConfig,
+)
+
+rewriter_lm = LanguageModelConfig(
+    client=LanguageModelClientConfig(
+        provider="anthropic", model="claude-haiku-4-5-20251001", api_key="...",
+        max_tokens=512, temperature=0.3,
+    ),
+)
+
+config = RagServerConfig(
+    persistence=PersistenceConfig(
+        vector_store=QdrantVectorStore(url="http://localhost:6333", collection="docs"),
+        metadata_store=SQLAlchemyMetadataStore(url="postgresql+asyncpg://user:pass@localhost/rag"),
+        document_store=PostgresDocumentStore(url="postgresql+asyncpg://user:pass@localhost/rag"),
+        graph_store=Neo4jGraphStore(uri="bolt://localhost:7687", username="neo4j", password="..."),
+    ),
+    ingestion=IngestionConfig(
+        embeddings=OpenAIEmbeddings(api_key="...", model="text-embedding-3-small"),
+        sparse_embeddings=FastEmbedSparseEmbeddings(),
+        vision=AnthropicVision(api_key="...", model="claude-sonnet-4-20250514"),
+        chunk_size=500,
+        chunk_overlap=50,
+        parent_chunk_size=1500,
+        contextual_chunking=True,
+        dpi=300,
+    ),
+    retrieval=RetrievalConfig(
+        top_k=5,
+        reranker=CohereReranking(api_key="...", model="rerank-v3.5"),
+        query_rewriter=HyDeRewriter(lm_config=rewriter_lm),
+        source_type_weights={"manual": 1.0, "transcript": 0.5},
+        parent_expansion=True,
+        cross_reference_enrichment=True,
+        enrich_lm_config=LanguageModelConfig(
+            client=LanguageModelClientConfig(provider="openai", model="gpt-4o", api_key="..."),
+        ),
+    ),
+    generation=GenerationConfig(
+        lm_config=LanguageModelConfig(
+            client=LanguageModelClientConfig(
+                provider="anthropic", model="claude-sonnet-4-20250514", api_key="...",
+            ),
+        ),
+        grounding_enabled=True,
+        grounding_threshold=0.5,
+        relevance_gate_enabled=True,
+        relevance_gate_model=LanguageModelConfig(
+            client=LanguageModelClientConfig(
+                provider="anthropic", model="claude-haiku-4-5-20251001", api_key="...",
+            ),
+        ),
+        guiding_enabled=True,
+    ),
+)
+```
+
+Only `persistence.vector_store` and `ingestion.embeddings` are required. Everything else is optional — add stores, search paths, and quality gates as needed.
+
+---
+
+## Modules
+
+### Ingestion
+
+Parse files, split into semantic text chunks, embed, store.
+
+```python
+async with RagServer(config) as rag:
+    # PDF, text, markdown
+    source = await rag.ingest("manual.pdf", knowledge_id="helios", source_type="manual")
+
+    # Images (requires vision provider)
+    source = await rag.ingest("diagram.png", knowledge_id="helios")
+
+    # Raw text
+    source = await rag.ingest_text("Q: What oil? A: SAE 30.", knowledge_id="helios")
+
+    # Page range and resume support
+    source = await rag.ingest("large.pdf", knowledge_id="helios", page_range="1-50")
+```
+
+`ingest()` auto-routes by file extension. Documents (`.pdf`, `.txt`, `.md`, images) go through chunking. Technical files (`.l5x`, `.xml`) go through the analyze pipeline when a metadata store is configured.
+
+#### Analyze pipeline
+
+Three-phase ingestion for technical documents. Extract entities, discover cross-page relationships, then embed.
+
+```python
+async with RagServer(config) as rag:
+    # Phase 1: per-page analysis (vision LLM for PDFs, deterministic for L5X/XML)
+    source = await rag.analyze("schematic.pdf", knowledge_id="plant-1")
+    # source.status == "analyzed"
+
+    # Phase 2: cross-page relationship discovery
+    source = await rag.synthesize(source.source_id)
+    # source.status == "synthesized"
+
+    # Phase 3: embed and store
+    source = await rag.complete_ingestion(source.source_id)
+    # source.status == "completed"
+```
+
+Or let `ingest()` run all three phases automatically for supported extensions.
+
+#### Batch ingestion
+
+Bulk text record ingestion with batched embedding, duplicate detection, and progress callbacks. Standalone from `RagServer`.
+
+```python
+from x64rag.retrieval.modules.ingestion.chunk.batch import (
+    BatchIngestionService, BatchConfig, TextRecord,
+)
+
+service = BatchIngestionService(
+    embeddings=embeddings,
+    vector_store=vector_store,
+    embedding_model_name="openai:text-embedding-3-small",
+    config=BatchConfig(batch_size=100, concurrency=5, skip_duplicates=True),
+    metadata_store=metadata_store,
+)
+
+records = [
+    TextRecord(text="Document content...", title="doc-1", knowledge_id="corpus"),
+    TextRecord(text="Another document...", title="doc-2", knowledge_id="corpus"),
+]
+stats = await service.ingest_batch(records)
+print(f"{stats.succeeded}/{stats.total} in {stats.duration_seconds:.1f}s")
+```
+
+### Retrieval
+
+The retrieval pipeline has three stages: **query rewriting** (pre-retrieval), **multi-path search**, and **post-retrieval refinement**.
+
+#### Query rewriting (pre-retrieval)
+
+Before any search runs, the SDK can optionally rewrite the query to improve retrieval quality. This adds one LLM call per query — an opt-in cost-quality tradeoff. Three strategies are available:
+
+- **HyDE** — Generates a hypothetical answer and searches using that embedding instead of the question's. Most effective when question language and document language differ (common in technical domains).
+- **Multi-query** — Generates 2-3 query variants that capture different phrasings of the same intent. All are searched, results fused.
+- **Step-back** — Generates a broader version of the query to retrieve background context the specific query would miss.
+
+When enabled, rewriting runs before all search paths. The rewritten queries feed into the same pipeline — vector, keyword, document, and graph all benefit from the improved queries.
+
+#### Search paths
+
+Up to five search paths run concurrently per query and merge results via reciprocal rank fusion:
+
+- **Vector** — Dense semantic similarity (always active). When `sparse_embeddings` is configured, SPLADE sparse vectors are stored alongside dense vectors and Qdrant runs hybrid search (dense + sparse) in a single query, combining semantic understanding with exact term matching.
+- **Keyword** — In-memory BM25 ranking via `rank-bm25` (when `bm25_enabled=True`). Builds BM25Okapi indexes per knowledge_id with LRU eviction. This is a simpler alternative to sparse embeddings — if `sparse_embeddings` is configured, BM25 is automatically disabled since SPLADE provides superior term-aware matching integrated directly into the vector store.
+- **Document** — Full-text ranked search + substring matching on original documents (requires document store).
+- **Graph** — Entity full-text lookup + N-hop relationship traversal (requires graph store).
+- **Enrich** — Structured retrieval with entity field filtering and cross-reference enrichment (requires metadata store).
+
+#### Post-retrieval
+
+After fusion, two optional stages run in sequence:
+
+- **Reranking** — Cross-encoder reranking against the original query (`CohereReranking`, `VoyageReranking`). Reorders fused results by relevance before truncating to `top_k`.
+- **Chunk refinement** — Extractive (context window extraction) or abstractive (LLM-based summarization) refinement of the final chunks.
+
+```python
+async with RagServer(config) as rag:
+    chunks = await rag.retrieve("part number 8842-A", knowledge_id="helios")
+    for chunk in chunks:
+        print(f"[{chunk.score:.2f}] {chunk.content[:100]}...")
+```
+
+### Generation
+
+Full query pipeline: retrieval, score gate, LLM relevance gate, optional clarification, and LLM generation.
+
+```python
+async with RagServer(config) as rag:
+    # Single query
+    result = await rag.query("How do I replace the filter?", knowledge_id="helios")
+    print(result.answer, result.grounded, result.confidence)
+
+    # Multi-turn conversation
+    follow_up = await rag.query(
+        "What about the oil filter?",
+        knowledge_id="helios",
+        history=[("How do I replace the filter?", result.answer or "")],
+    )
+
+    # Streaming
+    async for event in rag.query_stream("How do I replace the filter?", knowledge_id="helios"):
+        if event.type == "chunk":
+            print(event.content, end="", flush=True)
+        elif event.type == "sources":
+            for ref in event.sources:
+                print(f"\n  - {ref.name} (page {ref.page_number})")
+        elif event.type == "done":
+            print(f"\n[grounded={event.grounded}, confidence={event.confidence:.2f}]")
+```
+
+When grounding gates reject a query, `result.grounded` is `False` and `result.answer` contains an escalation message. When guiding is enabled, the relevance gate may return a `result.clarification` with a question and options.
+
+### Knowledge
+
+Source CRUD, chunk inspection, statistics, and embedding migration detection.
+
+```python
+async with RagServer(config) as rag:
+    # List sources
+    sources = await rag.knowledge.list(knowledge_id="helios")
+
+    # Inspect a source
+    source = await rag.knowledge.get(source_id)
+    chunks = await rag.knowledge.get_chunks(source_id)
+    stats = await rag.knowledge.get_stats(source_id)
+
+    # Remove a source and all its vectors
+    deleted = await rag.knowledge.remove(source_id)
+```
+
+Embedding migration is checked at startup. If the configured embedding model differs from what was used to embed existing sources, those sources are flagged as stale.
+
+### Evaluation
+
+Evaluate retrieval and generation quality with configurable metrics.
+
+- **ExactMatch** — Binary match after normalization
+- **F1Score** — Token-level overlap
+- **LLMJudge** — LLM-as-judge scoring via BAML
+- **RetrievalPrecision / RetrievalRecall** — Measure retrieval quality against ground truth
+
+---
+
+## Persistence
+
+Four stores, each optional except the vector store:
+
+| Store | Purpose | Required |
+|-------|---------|----------|
+| **Vector store** | Chunk embeddings for semantic search | Yes |
+| **Metadata store** | Source tracking, stats, analyze pipeline | No |
+| **Document store** | Full document text for substring search | No |
+| **Graph store** | Entity relationships for graph traversal | No |
+
+## Providers
+
+All providers use Python `Protocol` (structural typing). Swap freely, or implement your own — no inheritance required.
+
+| Category | Options |
+|----------|---------|
+| Embeddings | `OpenAIEmbeddings`, `VoyageEmbeddings`, `CohereEmbeddings` |
+| Sparse Embeddings | `FastEmbedSparseEmbeddings` (SPLADE via FastEmbed) |
+| Generation | Via `LanguageModelConfig` (any BAML-supported provider) |
+| Reranking | `CohereReranking`, `VoyageReranking` |
+| Query Rewriting | `HyDeRewriter`, `MultiQueryRewriter`, `StepBackRewriter` |
+| Vision | `AnthropicVision`, `OpenAIVision` |
+| Vector Store | `QdrantVectorStore` (dense + sparse named vectors, hybrid search) |
+| Metadata Store | `SQLAlchemyMetadataStore` (PostgreSQL via asyncpg, SQLite via aiosqlite) |
+| Document Store | `PostgresDocumentStore`, `FilesystemDocumentStore` |
+| Graph Store | `Neo4jGraphStore` (optional `neo4j>=5.0` dependency) |
+
+---
+
+## CLI
+
+Install with `uv add "x64rag[cli]"`. Configure once, use from anywhere.
+
+```bash
+x64rag retrieval init                                    # Create config + .env templates
+x64rag retrieval status                                  # Verify config and connections
+
+x64rag retrieval ingest manual.pdf -k equipment          # Ingest a file
+x64rag retrieval ingest --text "..." -k equipment        # Ingest raw text
+x64rag retrieval retrieve "part number RV-2201"          # Retrieval only, raw chunks
+x64rag retrieval retrieve "pressure" --min-score 0.4     # Filter low-quality results
+x64rag retrieval query "how to replace the filter?"      # Retrieve + generate answer
+x64rag retrieval query "what oil?" --session ticket-123  # Multi-turn with session context
+
+x64rag retrieval session list                            # List active sessions
+x64rag retrieval session clear ticket-123                # Clear a session
+
+x64rag retrieval knowledge list -k equipment             # List sources
+x64rag retrieval knowledge get <source-id>               # Source details
+x64rag retrieval knowledge chunks <source-id>            # Inspect chunks
+x64rag retrieval knowledge stats <source-id>             # Hit statistics
+x64rag retrieval knowledge remove <source-id>            # Delete source + chunks
+```
+
+Output auto-detects TTY: terminal gets human-readable, pipes get JSON. Override with `--json` or `--pretty`.
+
+Config lives in `~/.config/x64rag/config.toml` + `.env`. API keys in `.env`, providers and store URLs in the TOML. Run `x64rag retrieval init` to see all available options.
+
+See `examples/retrieval/cli/` for complete walkthroughs.
+
+---
+
+## API Reference
+
+### `RagServer`
+
+Async context manager: `async with RagServer(config) as rag:`
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `ingest(path, knowledge_id?, source_type?, metadata?, page_range?)` | `Source` | Ingest file (auto-routes by extension) |
+| `ingest_text(content, knowledge_id?, source_type?, metadata?)` | `Source` | Ingest raw text |
+| `analyze(path, knowledge_id?, source_type?, metadata?, page_range?)` | `Source` | Analyze pipeline phase 1 |
+| `synthesize(source_id)` | `Source` | Analyze pipeline phase 2 |
+| `complete_ingestion(source_id)` | `Source` | Analyze pipeline phase 3 |
+| `query(text, knowledge_id?, history?, min_score?)` | `QueryResult` | Full RAG pipeline |
+| `query_stream(text, knowledge_id?, history?, min_score?)` | `AsyncIterator[StreamEvent]` | Streaming RAG pipeline |
+| `retrieve(text, knowledge_id?, min_score?)` | `list[RetrievedChunk]` | Retrieval only (no generation) |
+| `embed(texts)` | `list[list[float]]` | Raw embedding (batch) |
+| `embed_single(text)` | `list[float]` | Raw embedding (single) |
+| `knowledge.list(knowledge_id?)` | `list[Source]` | List sources |
+| `knowledge.get(source_id)` | `Source \| None` | Get source |
+| `knowledge.get_chunks(source_id)` | `list[Chunk]` | Inspect chunks |
+| `knowledge.get_stats(source_id)` | `SourceStats \| None` | Hit statistics |
+| `knowledge.remove(source_id)` | `int` | Delete source + vectors |
+
+### Config Reference
+
+#### `RagServerConfig`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `persistence` | `PersistenceConfig` | yes | Stores |
+| `ingestion` | `IngestionConfig` | yes | Embeddings + chunking |
+| `retrieval` | `RetrievalConfig` | no | Search tuning |
+| `generation` | `GenerationConfig` | no | LLM generation |
+
+#### `PersistenceConfig`
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `vector_store` | `BaseVectorStore` | required | Vector store for embeddings |
+| `metadata_store` | `BaseMetadataStore` | `None` | Source metadata, stats, analyze pipeline |
+| `document_store` | `BaseDocumentStore` | `None` | Full document text for substring search |
+| `graph_store` | `BaseGraphStore` | `None` | Entity-relationship graph (Neo4j) |
+
+#### `IngestionConfig`
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `embeddings` | `BaseEmbeddings` | required | Embedding provider |
+| `vision` | `BaseVision` | `None` | Vision provider for images and PDF analysis |
+| `chunk_size` | `int` | `500` | Target tokens per chunk |
+| `chunk_overlap` | `int` | `50` | Token overlap between chunks |
+| `parent_chunk_size` | `int` | `0` | Parent chunk size (0 = disabled) |
+| `parent_chunk_overlap` | `int` | `200` | Token overlap between parent chunks |
+| `contextual_chunking` | `bool` | `True` | Prepend document context to each chunk before embedding |
+| `sparse_embeddings` | `BaseSparseEmbeddings` | `None` | SPLADE sparse vectors for hybrid search |
+| `lm_config` | `LanguageModelConfig` | `None` | LLM config for structured analysis |
+| `dpi` | `int` | `300` | PDF rendering resolution (analyze pipeline) |
+
+#### `RetrievalConfig`
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `top_k` | `int` | `5` | Results returned |
+| `reranker` | `BaseReranking` | `None` | Cross-encoder reranking |
+| `query_rewriter` | `BaseQueryRewriter` | `None` | Pre-retrieval query rewriting |
+| `parent_expansion` | `bool` | `True` | Return parent chunks when child chunks match |
+| `bm25_enabled` | `bool` | `False` | In-memory BM25 (deprecated when sparse_embeddings configured) |
+| `source_type_weights` | `dict[str, float]` | `None` | Score multipliers by source type |
+| `cross_reference_enrichment` | `bool` | `True` | Fetch cross-referenced pages (analyze pipeline) |
+| `enrich_lm_config` | `LanguageModelConfig` | `None` | LLM for query analysis |
+| `chunk_refiner` | `BaseChunkRefiner` | `None` | Post-retrieval chunk refinement |
+
+#### `GenerationConfig`
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `lm_config` | `LanguageModelConfig` | `None` | LLM config. Required for `query()` |
+| `system_prompt` | `str` | default | System prompt for generation |
+| `grounding_enabled` | `bool` | `False` | Score-based grounding gate |
+| `grounding_threshold` | `float` | `0.5` | Minimum retrieval score (0-1) |
+| `relevance_gate_enabled` | `bool` | `False` | LLM relevance gate (requires `grounding_enabled`) |
+| `relevance_gate_model` | `LanguageModelConfig` | `None` | LLM for relevance judgment |
+| `guiding_enabled` | `bool` | `False` | Clarification questions (requires `relevance_gate_enabled`) |
+| `step_lm_config` | `LanguageModelConfig` | `None` | LLM for step-by-step reasoning |
+
+#### `LanguageModelConfig`
+
+```python
+from x64rag.common.language_model import LanguageModelConfig, LanguageModelClientConfig
+
+# Simple — single provider
+config = LanguageModelConfig(
+    client=LanguageModelClientConfig(provider="openai", model="gpt-4o", api_key="..."),
+)
+
+# With fallback — auto-routes to fallback provider on failure
+config = LanguageModelConfig(
+    client=LanguageModelClientConfig(provider="anthropic", model="claude-haiku-4-5-20251001", api_key="..."),
+    fallback=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini", api_key="..."),
+    strategy="fallback",
+    max_retries=3,
+)
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `client` | `LanguageModelClientConfig` | required | Primary LLM client |
+| `fallback` | `LanguageModelClientConfig` | `None` | Fallback LLM client |
+| `max_retries` | `int` | `3` | Retry attempts per client (0-5) |
+| `strategy` | `"primary_only" \| "fallback"` | `"primary_only"` | Routing strategy |
+| `boundary_api_key` | `str` | `None` | Boundary proxy API key |
+
+| Client Field | Type | Default | Description |
+|------|------|---------|-------------|
+| `provider` | `str` | required | Provider name (`"openai"`, `"anthropic"`, etc.) |
+| `model` | `str` | required | Model identifier |
+| `api_key` | `str` | `None` | API key (falls back to environment variable) |
+| `max_tokens` | `int` | `4096` | Max output tokens |
+| `temperature` | `float` | `0.0` | Sampling temperature |
+

@@ -1,0 +1,71 @@
+from typing import Protocol
+
+from baml_py import errors as baml_errors
+
+from x64rag.retrieval.baml.baml_client.async_client import b
+from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
+from x64rag.retrieval.common.logging import get_logger
+from x64rag.retrieval.modules.evaluation.models import JudgmentResult
+
+logger = get_logger("retrieval/judging")
+
+
+class BaseRetrievalJudge(Protocol):
+    """Protocol for retrieval necessity judges."""
+
+    async def should_retrieve(self, query: str) -> JudgmentResult: ...
+
+
+class LLMRetrievalJudge:
+    """LLM-based retrieval necessity judge via BAML JudgeRetrievalNecessity.
+
+    Classifies whether a query needs domain-specific retrieval or can be
+    answered from general knowledge alone.
+    """
+
+    def __init__(
+        self,
+        lm_config: LanguageModelConfig,
+        knowledge_description: str | None = None,
+    ) -> None:
+        self._lm_config = lm_config
+        self._knowledge_description = knowledge_description or "A domain-specific knowledge base."
+
+    async def should_retrieve(self, query: str) -> JudgmentResult:
+        registry = build_registry(self._lm_config)
+
+        try:
+            result = await b.JudgeRetrievalNecessity(
+                query=query,
+                knowledge_description=self._knowledge_description,
+                baml_options={"client_registry": registry},
+            )
+
+            logger.info(
+                "retrieval judge: should_retrieve=%s, confidence=%.2f, reasoning=%s",
+                result.should_retrieve,
+                result.confidence,
+                (result.reasoning[:80] + "...") if len(result.reasoning) > 80 else result.reasoning,
+            )
+
+            return JudgmentResult(
+                should_retrieve=bool(result.should_retrieve),
+                confidence=min(max(result.confidence, 0.0), 1.0),
+                reasoning=result.reasoning,
+            )
+
+        except baml_errors.BamlValidationError as exc:
+            logger.exception(
+                "JudgeRetrievalNecessity failed: LLM returned unparseable response — "
+                "defaulting to should_retrieve=True. Detail: %s",
+                exc,
+            )
+            return JudgmentResult(
+                should_retrieve=True, confidence=0.0, reasoning="Judge failed — defaulting to retrieve"
+            )
+
+        except Exception as exc:
+            logger.exception("JudgeRetrievalNecessity failed: %s — defaulting to should_retrieve=True", exc)
+            return JudgmentResult(
+                should_retrieve=True, confidence=0.0, reasoning="Judge failed — defaulting to retrieve"
+            )
