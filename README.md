@@ -1,33 +1,12 @@
 # x64rag
 
-Dual-SDK Python package for AI-powered document pipelines.
-
-**Retrieval SDK** — Document ingestion, multi-path semantic search, LLM-grounded generation
-**Reasoning SDK** — Text analysis, classification, clustering, compliance checking, evaluation, pipeline composition
-
-## Setup
-
-```bash
-uv add x64rag
-
-uv add "x64rag[graph]"                  # graph + Neo4j support
-uv add "x64rag[cli]"                    # CLI support
-
-uv sync --all-extras
-uv run poe format                       # ruff format
-uv run poe check                        # ruff lint
-uv run poe check:fix                    # ruff lint + auto-fix
-uv run poe typecheck                    # mypy type checking
-uv run poe test                         # pytest
-uv run poe baml:generate:retrieval      # regenerate retrieval BAML client
-uv run poe baml:generate:reasoning      # regenerate reasoning BAML client
-```
+<img width="1536" height="480" alt="x64rag-ember" src="https://github.com/user-attachments/assets/c9395228-56eb-4c16-a0dc-076e1c8b34ab" />
 
 ## Retrieval SDK
 
 Composable retrieval-augmented generation. Ingest documents, search across vector, document, and graph stores in parallel, generate grounded answers with quality gates.
 
-[Get Started](examples/retrieval) · [Documentation](src/x64rag/retrieval/README.md)
+[Documentation](src/x64rag/retrieval/README.md) · [Examples](examples/retrieval)
 
 ```python
 from x64rag.retrieval import RagServer, RagServerConfig, PersistenceConfig, IngestionConfig
@@ -52,7 +31,7 @@ async with RagServer(config) as rag:
 
 Analysis, classification, compliance, evaluation, clustering, and pipeline composition. Each service is standalone — use one or compose them through pipelines.
 
-[Get Started](examples/reasoning) · [Documentation](src/x64rag/reasoning/README.md)
+[Documentation](src/x64rag/reasoning/README.md) · [Get Started](examples/reasoning)
 
 ```python
 from x64rag.reasoning import AnalysisService, AnalysisConfig, DimensionDefinition
@@ -71,6 +50,24 @@ result = await analyzer.analyze(
     ),
 )
 print(f"{result.primary_intent} — urgency: {result.dimensions['urgency'].value}")
+```
+
+## Installation
+
+```bash
+uv add x64rag
+
+uv add "x64rag[graph]"                  # graph + Neo4j support
+uv add "x64rag[cli]"                    # CLI support
+
+uv sync --all-extras
+uv run poe format                       # ruff format
+uv run poe check                        # ruff lint
+uv run poe check:fix                    # ruff lint + auto-fix
+uv run poe typecheck                    # mypy type checking
+uv run poe test                         # pytest
+uv run poe baml:generate:retrieval      # regenerate retrieval BAML client
+uv run poe baml:generate:reasoning      # regenerate reasoning BAML client
 ```
 
 ## Observability
