@@ -1,5 +1,3 @@
-# x64rag
-
 <img width="1536" height="480" alt="x64rag-ember" src="https://github.com/user-attachments/assets/c9395228-56eb-4c16-a0dc-076e1c8b34ab" />
 
 ## Retrieval SDK
