@@ -1,4 +1,4 @@
-<img width="1536" height="480" alt="x64rag-ember" src="https://github.com/user-attachments/assets/c9395228-56eb-4c16-a0dc-076e1c8b34ab" />
+<img width="1536" height="480" alt="x64rag-ember(2)" src="https://github.com/user-attachments/assets/ce3262aa-7453-48d4-992d-94a6a5dedd2a" />
 
 ## Retrieval-Augmented Generation
 
