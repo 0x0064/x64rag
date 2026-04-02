@@ -76,7 +76,7 @@ All LLM calls go through [BAML](https://docs.boundaryml.com/) for structured out
 
 **Programmatic** — Use `baml_py.Collector` for in-process token usage tracking.
 
-## Environment Variables
+## Env Variables
 
 ```bash
 OPENAI_API_KEY=
