@@ -9,26 +9,18 @@ Dual-SDK Python package for AI-powered document pipelines.
 
 ```bash
 uv add x64rag
-```
 
-Optional extras:
+uv add "x64rag[graph]"                  # graph + Neo4j support
+uv add "x64rag[cli]"                    # CLI support
 
-```bash
-uv add "x64rag[graph]"   # Neo4j knowledge graph support
-uv add "x64rag[cli]"     # Command-line interface
-```
-
-Development:
-
-```bash
 uv sync --all-extras
-uv run poe format                      # ruff format
-uv run poe check                       # ruff lint
-uv run poe check:fix                   # ruff lint + auto-fix
-uv run poe typecheck                   # mypy type checking
-uv run poe test                        # pytest
-uv run poe baml:generate:retrieval     # regenerate retrieval BAML client
-uv run poe baml:generate:reasoning     # regenerate reasoning BAML client
+uv run poe format                       # ruff format
+uv run poe check                        # ruff lint
+uv run poe check:fix                    # ruff lint + auto-fix
+uv run poe typecheck                    # mypy type checking
+uv run poe test                         # pytest
+uv run poe baml:generate:retrieval      # regenerate retrieval BAML client
+uv run poe baml:generate:reasoning      # regenerate reasoning BAML client
 ```
 
 ## Retrieval SDK
@@ -92,18 +84,15 @@ All LLM calls go through [BAML](https://docs.boundaryml.com/) for structured out
 ## Environment Variables
 
 ```bash
-# API keys (CLI only — SDK users pass keys via constructor)
 OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
 COHERE_API_KEY=
 VOYAGE_API_KEY=
 
-# Reasoning CLI overrides
 X64RAG_PROVIDER=
 X64RAG_MODEL=
 X64RAG_API_KEY=
 
-# Logging
 X64RAG_LOG_ENABLED=false    # true / false
 X64RAG_LOG_LEVEL=INFO       # DEBUG, INFO, WARNING, ERROR
 BAML_LOG=warn               # info, warn, debug
