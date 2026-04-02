@@ -1,6 +1,6 @@
 <img width="1536" height="480" alt="x64rag-ember" src="https://github.com/user-attachments/assets/c9395228-56eb-4c16-a0dc-076e1c8b34ab" />
 
-## Retrieval
+## Retrieval-Augmented Generation
 
 Composable retrieval-augmented generation. Ingest documents, search across vector, document, and graph stores in parallel, generate grounded answers with quality gates.
 
@@ -25,7 +25,14 @@ async with RagServer(config) as rag:
     print(result.answer)
 ```
 
-## Reasoning
+```bash
+x64rag retrieval init
+x64rag retrieval ingest manual.pdf -k equipment
+x64rag retrieval query "how to replace the filter?" -k equipment
+x64rag retrieval retrieve "part number 8842-A" -k equipment
+```
+
+## Reasoning-Augmented Generation
 
 Analysis, classification, compliance, evaluation, clustering, and pipeline composition. Each service is standalone — use one or compose them through pipelines.
 
@@ -48,6 +55,13 @@ result = await analyzer.analyze(
     ),
 )
 print(f"{result.primary_intent} — urgency: {result.dimensions['urgency'].value}")
+```
+
+```bash
+x64rag reasoning init
+x64rag reasoning analyze "My order FB-12345 hasn't arrived and I need it by Friday"
+x64rag reasoning classify "I want my money back" --categories categories.json
+x64rag reasoning compliance "We'll give you 150% refund" --references policy.md
 ```
 
 ## Installation
