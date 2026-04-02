@@ -2,8 +2,8 @@
 
 Dual-SDK Python package for AI-powered document pipelines.
 
-- **Retrieval SDK** — Document ingestion, multi-path semantic search, LLM-grounded generation
-- **Reasoning SDK** — Text analysis, classification, clustering, compliance checking, evaluation, pipeline composition
+**Retrieval SDK** — Document ingestion, multi-path semantic search, LLM-grounded generation
+**Reasoning SDK** — Text analysis, classification, clustering, compliance checking, evaluation, pipeline composition
 
 ## Setup
 
@@ -79,7 +79,7 @@ All LLM calls go through [BAML](https://docs.boundaryml.com/) for structured out
 
 **Boundary Studio** — Set `boundary_api_key` in any `LanguageModelConfig` to enable automatic cloud tracing with token counts, latency, and function-level tracking.
 
-**Programmatic tracking** — Use `baml_py.Collector` for in-process token usage tracking.
+**Programmatic** — Use `baml_py.Collector` for in-process token usage tracking.
 
 ## Environment Variables
 
