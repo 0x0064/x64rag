@@ -67,12 +67,14 @@ x64rag reasoning compliance "We'll give you 150% refund" --references policy.md
 ## Installation
 
 ```bash
-uv add x64rag
+uv add x64rag                           # add x64rag to your project
 
-uv add "x64rag[graph]"                  # graph + Neo4j support
-uv add "x64rag[cli]"                    # CLI support
+uv add "x64rag[graph]"                  # x64rag + graph + Neo4j support
+uv add "x64rag[cli]"                    # x64rag + CLI support
 
-uv sync --all-extras
+uv sync --extra dev                     # setup with dev optional
+uv sync --all-extras                    # setup with all optional
+
 uv run poe format                       # ruff format
 uv run poe check                        # ruff lint
 uv run poe check:fix                    # ruff lint + auto-fix
