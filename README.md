@@ -1,6 +1,6 @@
 <img width="1536" height="480" alt="x64rag-ember" src="https://github.com/user-attachments/assets/c9395228-56eb-4c16-a0dc-076e1c8b34ab" />
 
-## Retrieval SDK
+## Retrieval
 
 Composable retrieval-augmented generation. Ingest documents, search across vector, document, and graph stores in parallel, generate grounded answers with quality gates.
 
@@ -25,7 +25,7 @@ async with RagServer(config) as rag:
     print(result.answer)
 ```
 
-## Reasoning SDK
+## Reasoning
 
 Analysis, classification, compliance, evaluation, clustering, and pipeline composition. Each service is standalone — use one or compose them through pipelines.
 
