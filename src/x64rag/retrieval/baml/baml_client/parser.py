@@ -47,10 +47,40 @@ class LlmResponseParser:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="CompressRetrievedContext", llm_response=llm_response, mode="request")
         return typing.cast(types.CompressedContext, __result__)
 
+    def ContinueDocumentStructure(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.ExtractedStructure:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="ContinueDocumentStructure", llm_response=llm_response, mode="request")
+        return typing.cast(types.ExtractedStructure, __result__)
+
+    def DetectTableOfContents(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.TocDetectionResult:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="DetectTableOfContents", llm_response=llm_response, mode="request")
+        return typing.cast(types.TocDetectionResult, __result__)
+
+    def ExtractDocumentStructure(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.ExtractedStructure:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="ExtractDocumentStructure", llm_response=llm_response, mode="request")
+        return typing.cast(types.ExtractedStructure, __result__)
+
+    def FindSectionStart(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> int:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="FindSectionStart", llm_response=llm_response, mode="request")
+        return typing.cast(int, __result__)
+
     def GenerateAnswer(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> str:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateAnswer", llm_response=llm_response, mode="request")
+        return typing.cast(str, __result__)
+
+    def GenerateDocDescription(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateDocDescription", llm_response=llm_response, mode="request")
         return typing.cast(str, __result__)
 
     def GenerateHypotheticalDocument(
@@ -58,6 +88,12 @@ class LlmResponseParser:
     ) -> types.HypotheticalDocument:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateHypotheticalDocument", llm_response=llm_response, mode="request")
         return typing.cast(types.HypotheticalDocument, __result__)
+
+    def GenerateNodeSummary(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateNodeSummary", llm_response=llm_response, mode="request")
+        return typing.cast(str, __result__)
 
     def GenerateQueryVariants(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -89,6 +125,12 @@ class LlmResponseParser:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="JudgeRetrievalNecessity", llm_response=llm_response, mode="request")
         return typing.cast(types.RetrievalNecessityJudgment, __result__)
 
+    def ParseTableOfContents(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.TocStructure:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="ParseTableOfContents", llm_response=llm_response, mode="request")
+        return typing.cast(types.TocStructure, __result__)
+
     def RerankChunks(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> typing.List["types.RankedChunk"]:
@@ -100,6 +142,18 @@ class LlmResponseParser:
     ) -> types.DocumentSynthesis:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="SynthesizeDocument", llm_response=llm_response, mode="request")
         return typing.cast(types.DocumentSynthesis, __result__)
+
+    def TreeRetrievalStep(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.Union["types.ToolFetchPages", "types.ToolDrillDown", "types.ToolResolvedPages"]:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="TreeRetrievalStep", llm_response=llm_response, mode="request")
+        return typing.cast(typing.Union["types.ToolFetchPages", "types.ToolDrillDown", "types.ToolResolvedPages"], __result__)
+
+    def VerifySectionPosition(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> bool:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="VerifySectionPosition", llm_response=llm_response, mode="request")
+        return typing.cast(bool, __result__)
 
     
 
@@ -133,10 +187,40 @@ class LlmStreamParser:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="CompressRetrievedContext", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.CompressedContext, __result__)
 
+    def ContinueDocumentStructure(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.ExtractedStructure:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="ContinueDocumentStructure", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.ExtractedStructure, __result__)
+
+    def DetectTableOfContents(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.TocDetectionResult:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="DetectTableOfContents", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.TocDetectionResult, __result__)
+
+    def ExtractDocumentStructure(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.ExtractedStructure:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="ExtractDocumentStructure", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.ExtractedStructure, __result__)
+
+    def FindSectionStart(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> int:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="FindSectionStart", llm_response=llm_response, mode="stream")
+        return typing.cast(int, __result__)
+
     def GenerateAnswer(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> str:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateAnswer", llm_response=llm_response, mode="stream")
+        return typing.cast(str, __result__)
+
+    def GenerateDocDescription(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateDocDescription", llm_response=llm_response, mode="stream")
         return typing.cast(str, __result__)
 
     def GenerateHypotheticalDocument(
@@ -144,6 +228,12 @@ class LlmStreamParser:
     ) -> stream_types.HypotheticalDocument:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateHypotheticalDocument", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.HypotheticalDocument, __result__)
+
+    def GenerateNodeSummary(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> str:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="GenerateNodeSummary", llm_response=llm_response, mode="stream")
+        return typing.cast(str, __result__)
 
     def GenerateQueryVariants(
         self, llm_response: str, baml_options: BamlCallOptions = {},
@@ -175,6 +265,12 @@ class LlmStreamParser:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="JudgeRetrievalNecessity", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.RetrievalNecessityJudgment, __result__)
 
+    def ParseTableOfContents(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.TocStructure:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="ParseTableOfContents", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.TocStructure, __result__)
+
     def RerankChunks(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> typing.List["stream_types.RankedChunk"]:
@@ -186,5 +282,17 @@ class LlmStreamParser:
     ) -> stream_types.DocumentSynthesis:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="SynthesizeDocument", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.DocumentSynthesis, __result__)
+
+    def TreeRetrievalStep(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> typing.Union["stream_types.ToolFetchPages", "stream_types.ToolDrillDown", "stream_types.ToolResolvedPages"]:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="TreeRetrievalStep", llm_response=llm_response, mode="stream")
+        return typing.cast(typing.Union["stream_types.ToolFetchPages", "stream_types.ToolDrillDown", "stream_types.ToolResolvedPages"], __result__)
+
+    def VerifySectionPosition(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> bool:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="VerifySectionPosition", llm_response=llm_response, mode="stream")
+        return typing.cast(bool, __result__)
 
     

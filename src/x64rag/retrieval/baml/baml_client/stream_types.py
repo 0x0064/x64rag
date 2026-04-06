@@ -23,7 +23,7 @@ class StreamState(BaseModel, typing.Generic[StreamStateValueT]):
     value: StreamStateValueT
     state: typing_extensions.Literal["Pending", "Incomplete", "Complete"]
 # #########################################################################
-# Generated classes (16)
+# Generated classes (24)
 # #########################################################################
 
 class AnswerQualityJudgment(BaseModel):
@@ -48,6 +48,14 @@ class DocumentSynthesis(BaseModel):
     cross_references: typing.List["SynthesisCrossReference"]
     page_clusters: typing.List["SynthesisPageCluster"]
     document_summary: typing.Optional[str] = None
+
+class ExtractedSection(BaseModel):
+    structure: typing.Optional[str] = Field(default=None, description='hierarchical numbering')
+    title: typing.Optional[str] = Field(default=None, description='section title')
+    start_page: typing.Optional[int] = Field(default=None, description='page where this section begins')
+
+class ExtractedStructure(BaseModel):
+    sections: typing.List["ExtractedSection"] = Field(description='document sections discovered from content')
 
 class HypotheticalDocument(BaseModel):
     passage: typing.Optional[str] = Field(default=None, description='A hypothetical document passage answering the question')
@@ -101,6 +109,30 @@ class SynthesisCrossReference(BaseModel):
 class SynthesisPageCluster(BaseModel):
     pages: typing.List[int]
     reason: typing.Optional[str] = None
+
+class TocDetectionResult(BaseModel):
+    has_toc: typing.Optional[bool] = Field(default=None, description='whether the page contains a table of contents')
+    has_page_numbers: typing.Optional[bool] = Field(default=None, description='whether the TOC entries include page numbers')
+
+class TocEntry(BaseModel):
+    structure: typing.Optional[str] = Field(default=None, description='hierarchical numbering, e.g. \'1\', \'1.1\', \'1.1.2\'')
+    title: typing.Optional[str] = Field(default=None, description='section title text')
+    page: typing.Optional[int] = Field(default=None, description='page number if present in TOC, null otherwise')
+
+class TocStructure(BaseModel):
+    entries: typing.List["TocEntry"] = Field(description='ordered list of TOC entries with hierarchy')
+
+class ToolDrillDown(BaseModel):
+    node_id: typing.Optional[str] = Field(default=None, description='ID of the node to explore deeper')
+    reasoning: typing.Optional[str] = Field(default=None, description='why this subtree needs closer inspection')
+
+class ToolFetchPages(BaseModel):
+    pages: typing.Optional[str] = Field(default=None, description='page ranges to retrieve, e.g. \'5-7\' or \'3,8,12-15\'')
+    reasoning: typing.Optional[str] = Field(default=None, description='why these pages are likely relevant to the query')
+
+class ToolResolvedPages(BaseModel):
+    pages: typing.Optional[str] = Field(default=None, description='final relevant page ranges that answer the query')
+    reasoning: typing.Optional[str] = Field(default=None, description='summary of how these pages address the query')
 
 # #########################################################################
 # Generated type aliases (0)

@@ -46,6 +46,7 @@ class _SourceRow(_Base):
     file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     stale: Mapped[bool] = mapped_column(nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    tree_index_json: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class _SourceStatsRow(_Base):
@@ -158,6 +159,7 @@ class SQLAlchemyMetadataStore:
         "source_type",
         "source_weight",
         "status",
+        "tree_index_json",
     }
 
     async def update_source(self, source_id: str, **fields) -> None:
@@ -243,6 +245,16 @@ class SQLAlchemyMetadataStore:
                 grounded_hits=row.grounded_hits,
                 ungrounded_hits=row.ungrounded_hits,
             )
+
+    async def save_tree_index(self, source_id: str, tree_index_json: str) -> None:
+        await self.update_source(source_id, tree_index_json=tree_index_json)
+
+    async def get_tree_index(self, source_id: str) -> str | None:
+        async with self._session_factory() as session:
+            row = await session.get(_SourceRow, source_id)
+            if row is None:
+                return None
+            return row.tree_index_json
 
     async def shutdown(self) -> None:
         await self._engine.dispose()

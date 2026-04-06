@@ -20,7 +20,7 @@ from .globals import DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIM
 class TypeBuilder(type_builder.TypeBuilder):
     def __init__(self):
         super().__init__(classes=set(
-          ["AnswerQualityJudgment","CompressedContext","DiscoveredEntity","DiscoveredTable","DocumentSynthesis","HypotheticalDocument","PageAnalysis","QueryAnalysis","QueryVariants","RankedChunk","ReasoningStep","RelevanceJudgment","RetrievalNecessityJudgment","StepBackQuery","SynthesisCrossReference","SynthesisPageCluster",]
+          ["AnswerQualityJudgment","CompressedContext","DiscoveredEntity","DiscoveredTable","DocumentSynthesis","ExtractedSection","ExtractedStructure","HypotheticalDocument","PageAnalysis","QueryAnalysis","QueryVariants","RankedChunk","ReasoningStep","RelevanceJudgment","RetrievalNecessityJudgment","StepBackQuery","SynthesisCrossReference","SynthesisPageCluster","TocDetectionResult","TocEntry","TocStructure","ToolDrillDown","ToolFetchPages","ToolResolvedPages",]
         ), enums=set(
           []
         ), runtime=DO_NOT_USE_DIRECTLY_UNLESS_YOU_KNOW_WHAT_YOURE_DOING_RUNTIME)
@@ -31,7 +31,7 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
     # #########################################################################
-    # Generated classes 16
+    # Generated classes 24
     # #########################################################################
 
     @property
@@ -53,6 +53,14 @@ class TypeBuilder(type_builder.TypeBuilder):
     @property
     def DocumentSynthesis(self) -> "DocumentSynthesisViewer":
         return DocumentSynthesisViewer(self)
+
+    @property
+    def ExtractedSection(self) -> "ExtractedSectionViewer":
+        return ExtractedSectionViewer(self)
+
+    @property
+    def ExtractedStructure(self) -> "ExtractedStructureViewer":
+        return ExtractedStructureViewer(self)
 
     @property
     def HypotheticalDocument(self) -> "HypotheticalDocumentViewer":
@@ -98,6 +106,30 @@ class TypeBuilder(type_builder.TypeBuilder):
     def SynthesisPageCluster(self) -> "SynthesisPageClusterViewer":
         return SynthesisPageClusterViewer(self)
 
+    @property
+    def TocDetectionResult(self) -> "TocDetectionResultViewer":
+        return TocDetectionResultViewer(self)
+
+    @property
+    def TocEntry(self) -> "TocEntryViewer":
+        return TocEntryViewer(self)
+
+    @property
+    def TocStructure(self) -> "TocStructureViewer":
+        return TocStructureViewer(self)
+
+    @property
+    def ToolDrillDown(self) -> "ToolDrillDownViewer":
+        return ToolDrillDownViewer(self)
+
+    @property
+    def ToolFetchPages(self) -> "ToolFetchPagesViewer":
+        return ToolFetchPagesViewer(self)
+
+    @property
+    def ToolResolvedPages(self) -> "ToolResolvedPagesViewer":
+        return ToolResolvedPagesViewer(self)
+
 
 
 # #########################################################################
@@ -106,7 +138,7 @@ class TypeBuilder(type_builder.TypeBuilder):
 
 
 # #########################################################################
-# Generated classes 16
+# Generated classes 24
 # #########################################################################
 
 class AnswerQualityJudgmentAst:
@@ -332,6 +364,92 @@ class DocumentSynthesisProperties:
     @property
     def document_summary(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("document_summary"))
+    
+    
+
+
+class ExtractedSectionAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("ExtractedSection")
+        self._properties: typing.Set[str] = set([  "structure",  "title",  "start_page",  ])
+        self._props = ExtractedSectionProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "ExtractedSectionProperties":
+        return self._props
+
+
+class ExtractedSectionViewer(ExtractedSectionAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class ExtractedSectionProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def structure(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("structure"))
+    
+    @property
+    def title(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("title"))
+    
+    @property
+    def start_page(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("start_page"))
+    
+    
+
+
+class ExtractedStructureAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("ExtractedStructure")
+        self._properties: typing.Set[str] = set([  "sections",  ])
+        self._props = ExtractedStructureProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "ExtractedStructureProperties":
+        return self._props
+
+
+class ExtractedStructureViewer(ExtractedStructureAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class ExtractedStructureProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def sections(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("sections"))
     
     
 
@@ -841,6 +959,264 @@ class SynthesisPageClusterProperties:
     @property
     def reason(self) -> type_builder.ClassPropertyViewer:
         return type_builder.ClassPropertyViewer(self.__bldr.property("reason"))
+    
+    
+
+
+class TocDetectionResultAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("TocDetectionResult")
+        self._properties: typing.Set[str] = set([  "has_toc",  "has_page_numbers",  ])
+        self._props = TocDetectionResultProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "TocDetectionResultProperties":
+        return self._props
+
+
+class TocDetectionResultViewer(TocDetectionResultAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class TocDetectionResultProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def has_toc(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("has_toc"))
+    
+    @property
+    def has_page_numbers(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("has_page_numbers"))
+    
+    
+
+
+class TocEntryAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("TocEntry")
+        self._properties: typing.Set[str] = set([  "structure",  "title",  "page",  ])
+        self._props = TocEntryProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "TocEntryProperties":
+        return self._props
+
+
+class TocEntryViewer(TocEntryAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class TocEntryProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def structure(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("structure"))
+    
+    @property
+    def title(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("title"))
+    
+    @property
+    def page(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("page"))
+    
+    
+
+
+class TocStructureAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("TocStructure")
+        self._properties: typing.Set[str] = set([  "entries",  ])
+        self._props = TocStructureProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "TocStructureProperties":
+        return self._props
+
+
+class TocStructureViewer(TocStructureAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class TocStructureProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def entries(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("entries"))
+    
+    
+
+
+class ToolDrillDownAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("ToolDrillDown")
+        self._properties: typing.Set[str] = set([  "node_id",  "reasoning",  ])
+        self._props = ToolDrillDownProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "ToolDrillDownProperties":
+        return self._props
+
+
+class ToolDrillDownViewer(ToolDrillDownAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class ToolDrillDownProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def node_id(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("node_id"))
+    
+    @property
+    def reasoning(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("reasoning"))
+    
+    
+
+
+class ToolFetchPagesAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("ToolFetchPages")
+        self._properties: typing.Set[str] = set([  "pages",  "reasoning",  ])
+        self._props = ToolFetchPagesProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "ToolFetchPagesProperties":
+        return self._props
+
+
+class ToolFetchPagesViewer(ToolFetchPagesAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class ToolFetchPagesProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def pages(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("pages"))
+    
+    @property
+    def reasoning(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("reasoning"))
+    
+    
+
+
+class ToolResolvedPagesAst:
+    def __init__(self, tb: type_builder.TypeBuilder):
+        _tb = tb._tb # type: ignore (we know how to use this private attribute)
+        self._bldr = _tb.class_("ToolResolvedPages")
+        self._properties: typing.Set[str] = set([  "pages",  "reasoning",  ])
+        self._props = ToolResolvedPagesProperties(self._bldr, self._properties)
+
+    def type(self) -> baml_py.FieldType:
+        return self._bldr.field()
+
+    @property
+    def props(self) -> "ToolResolvedPagesProperties":
+        return self._props
+
+
+class ToolResolvedPagesViewer(ToolResolvedPagesAst):
+    def __init__(self, tb: type_builder.TypeBuilder):
+        super().__init__(tb)
+
+    
+    def list_properties(self) -> typing.List[typing.Tuple[str, type_builder.ClassPropertyViewer]]:
+        return [(name, type_builder.ClassPropertyViewer(self._bldr.property(name))) for name in self._properties]
+    
+
+
+class ToolResolvedPagesProperties:
+    def __init__(self, bldr: baml_py.ClassBuilder, properties: typing.Set[str]):
+        self.__bldr = bldr
+        self.__properties = properties # type: ignore (we know how to use this private attribute) # noqa: F821
+
+    
+    
+    @property
+    def pages(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("pages"))
+    
+    @property
+    def reasoning(self) -> type_builder.ClassPropertyViewer:
+        return type_builder.ClassPropertyViewer(self.__bldr.property("reasoning"))
     
     
 

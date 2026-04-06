@@ -142,6 +142,66 @@ class BamlAsyncClient:
                 "query": query,"passages": passages,
             })
             return typing.cast(types.CompressedContext, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def ContinueDocumentStructure(self, existing_structure: str,pages_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.ExtractedStructure:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.ContinueDocumentStructure(existing_structure=existing_structure,pages_text=pages_text,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="ContinueDocumentStructure", args={
+                "existing_structure": existing_structure,"pages_text": pages_text,
+            })
+            return typing.cast(types.ExtractedStructure, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def DetectTableOfContents(self, page_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.TocDetectionResult:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.DetectTableOfContents(page_text=page_text,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="DetectTableOfContents", args={
+                "page_text": page_text,
+            })
+            return typing.cast(types.TocDetectionResult, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def ExtractDocumentStructure(self, pages_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.ExtractedStructure:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.ExtractDocumentStructure(pages_text=pages_text,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="ExtractDocumentStructure", args={
+                "pages_text": pages_text,
+            })
+            return typing.cast(types.ExtractedStructure, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def FindSectionStart(self, section_title: str,pages_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> int:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.FindSectionStart(section_title=section_title,pages_text=pages_text,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="FindSectionStart", args={
+                "section_title": section_title,"pages_text": pages_text,
+            })
+            return typing.cast(int, __result__.cast_to(types, types, stream_types, False, __runtime__))
     async def GenerateAnswer(self, system_prompt: str,context: str,query: str,history: str,
         baml_options: BamlCallOptions = {},
     ) -> str:
@@ -155,6 +215,21 @@ class BamlAsyncClient:
             # Original non-streaming code
             __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="GenerateAnswer", args={
                 "system_prompt": system_prompt,"context": context,"query": query,"history": history,
+            })
+            return typing.cast(str, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def GenerateDocDescription(self, tree_structure: str,
+        baml_options: BamlCallOptions = {},
+    ) -> str:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.GenerateDocDescription(tree_structure=tree_structure,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="GenerateDocDescription", args={
+                "tree_structure": tree_structure,
             })
             return typing.cast(str, __result__.cast_to(types, types, stream_types, False, __runtime__))
     async def GenerateHypotheticalDocument(self, query: str,
@@ -172,6 +247,21 @@ class BamlAsyncClient:
                 "query": query,
             })
             return typing.cast(types.HypotheticalDocument, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def GenerateNodeSummary(self, title: str,section_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> str:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.GenerateNodeSummary(title=title,section_text=section_text,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="GenerateNodeSummary", args={
+                "title": title,"section_text": section_text,
+            })
+            return typing.cast(str, __result__.cast_to(types, types, stream_types, False, __runtime__))
     async def GenerateQueryVariants(self, query: str,num_variants: int,
         baml_options: BamlCallOptions = {},
     ) -> types.QueryVariants:
@@ -247,6 +337,21 @@ class BamlAsyncClient:
                 "query": query,"knowledge_description": knowledge_description,
             })
             return typing.cast(types.RetrievalNecessityJudgment, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def ParseTableOfContents(self, toc_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> types.TocStructure:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.ParseTableOfContents(toc_text=toc_text,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="ParseTableOfContents", args={
+                "toc_text": toc_text,
+            })
+            return typing.cast(types.TocStructure, __result__.cast_to(types, types, stream_types, False, __runtime__))
     async def RerankChunks(self, query: str,passages: str,
         baml_options: BamlCallOptions = {},
     ) -> typing.List["types.RankedChunk"]:
@@ -277,6 +382,36 @@ class BamlAsyncClient:
                 "page_analyses": page_analyses,
             })
             return typing.cast(types.DocumentSynthesis, __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def TreeRetrievalStep(self, query: str,tree_structure: str,accumulated_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> typing.Union["types.ToolFetchPages", "types.ToolDrillDown", "types.ToolResolvedPages"]:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.TreeRetrievalStep(query=query,tree_structure=tree_structure,accumulated_context=accumulated_context,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="TreeRetrievalStep", args={
+                "query": query,"tree_structure": tree_structure,"accumulated_context": accumulated_context,
+            })
+            return typing.cast(typing.Union["types.ToolFetchPages", "types.ToolDrillDown", "types.ToolResolvedPages"], __result__.cast_to(types, types, stream_types, False, __runtime__))
+    async def VerifySectionPosition(self, title: str,page_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> bool:
+        # Check if on_tick is provided
+        if 'on_tick' in baml_options:
+            # Use streaming internally when on_tick is provided
+            __stream__ = self.stream.VerifySectionPosition(title=title,page_text=page_text,
+                baml_options=baml_options)
+            return await __stream__.get_final_response()
+        else:
+            # Original non-streaming code
+            __result__ = await self.__options.merge_options(baml_options).call_function_async(function_name="VerifySectionPosition", args={
+                "title": title,"page_text": page_text,
+            })
+            return typing.cast(bool, __result__.cast_to(types, types, stream_types, False, __runtime__))
     
 
 
@@ -334,11 +469,71 @@ class BamlStreamClient:
           lambda x: typing.cast(types.CompressedContext, x.cast_to(types, types, stream_types, False, __runtime__)),
           __ctx__,
         )
+    def ContinueDocumentStructure(self, existing_structure: str,pages_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.ExtractedStructure, types.ExtractedStructure]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="ContinueDocumentStructure", args={
+            "existing_structure": existing_structure,"pages_text": pages_text,
+        })
+        return baml_py.BamlStream[stream_types.ExtractedStructure, types.ExtractedStructure](
+          __result__,
+          lambda x: typing.cast(stream_types.ExtractedStructure, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.ExtractedStructure, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
+    def DetectTableOfContents(self, page_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.TocDetectionResult, types.TocDetectionResult]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="DetectTableOfContents", args={
+            "page_text": page_text,
+        })
+        return baml_py.BamlStream[stream_types.TocDetectionResult, types.TocDetectionResult](
+          __result__,
+          lambda x: typing.cast(stream_types.TocDetectionResult, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.TocDetectionResult, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
+    def ExtractDocumentStructure(self, pages_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.ExtractedStructure, types.ExtractedStructure]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="ExtractDocumentStructure", args={
+            "pages_text": pages_text,
+        })
+        return baml_py.BamlStream[stream_types.ExtractedStructure, types.ExtractedStructure](
+          __result__,
+          lambda x: typing.cast(stream_types.ExtractedStructure, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.ExtractedStructure, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
+    def FindSectionStart(self, section_title: str,pages_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[int, int]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="FindSectionStart", args={
+            "section_title": section_title,"pages_text": pages_text,
+        })
+        return baml_py.BamlStream[int, int](
+          __result__,
+          lambda x: typing.cast(int, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(int, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
     def GenerateAnswer(self, system_prompt: str,context: str,query: str,history: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[str, str]:
         __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="GenerateAnswer", args={
             "system_prompt": system_prompt,"context": context,"query": query,"history": history,
+        })
+        return baml_py.BamlStream[str, str](
+          __result__,
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
+    def GenerateDocDescription(self, tree_structure: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[str, str]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="GenerateDocDescription", args={
+            "tree_structure": tree_structure,
         })
         return baml_py.BamlStream[str, str](
           __result__,
@@ -356,6 +551,18 @@ class BamlStreamClient:
           __result__,
           lambda x: typing.cast(stream_types.HypotheticalDocument, x.cast_to(types, types, stream_types, True, __runtime__)),
           lambda x: typing.cast(types.HypotheticalDocument, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
+    def GenerateNodeSummary(self, title: str,section_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[str, str]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="GenerateNodeSummary", args={
+            "title": title,"section_text": section_text,
+        })
+        return baml_py.BamlStream[str, str](
+          __result__,
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(str, x.cast_to(types, types, stream_types, False, __runtime__)),
           __ctx__,
         )
     def GenerateQueryVariants(self, query: str,num_variants: int,
@@ -418,6 +625,18 @@ class BamlStreamClient:
           lambda x: typing.cast(types.RetrievalNecessityJudgment, x.cast_to(types, types, stream_types, False, __runtime__)),
           __ctx__,
         )
+    def ParseTableOfContents(self, toc_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[stream_types.TocStructure, types.TocStructure]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="ParseTableOfContents", args={
+            "toc_text": toc_text,
+        })
+        return baml_py.BamlStream[stream_types.TocStructure, types.TocStructure](
+          __result__,
+          lambda x: typing.cast(stream_types.TocStructure, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(types.TocStructure, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
     def RerankChunks(self, query: str,passages: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.BamlStream[typing.List["stream_types.RankedChunk"], typing.List["types.RankedChunk"]]:
@@ -440,6 +659,30 @@ class BamlStreamClient:
           __result__,
           lambda x: typing.cast(stream_types.DocumentSynthesis, x.cast_to(types, types, stream_types, True, __runtime__)),
           lambda x: typing.cast(types.DocumentSynthesis, x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
+    def TreeRetrievalStep(self, query: str,tree_structure: str,accumulated_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[typing.Union["stream_types.ToolFetchPages", "stream_types.ToolDrillDown", "stream_types.ToolResolvedPages"], typing.Union["types.ToolFetchPages", "types.ToolDrillDown", "types.ToolResolvedPages"]]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="TreeRetrievalStep", args={
+            "query": query,"tree_structure": tree_structure,"accumulated_context": accumulated_context,
+        })
+        return baml_py.BamlStream[typing.Union["stream_types.ToolFetchPages", "stream_types.ToolDrillDown", "stream_types.ToolResolvedPages"], typing.Union["types.ToolFetchPages", "types.ToolDrillDown", "types.ToolResolvedPages"]](
+          __result__,
+          lambda x: typing.cast(typing.Union["stream_types.ToolFetchPages", "stream_types.ToolDrillDown", "stream_types.ToolResolvedPages"], x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(typing.Union["types.ToolFetchPages", "types.ToolDrillDown", "types.ToolResolvedPages"], x.cast_to(types, types, stream_types, False, __runtime__)),
+          __ctx__,
+        )
+    def VerifySectionPosition(self, title: str,page_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.BamlStream[bool, bool]:
+        __ctx__, __result__ = self.__options.merge_options(baml_options).create_async_stream(function_name="VerifySectionPosition", args={
+            "title": title,"page_text": page_text,
+        })
+        return baml_py.BamlStream[bool, bool](
+          __result__,
+          lambda x: typing.cast(bool, x.cast_to(types, types, stream_types, True, __runtime__)),
+          lambda x: typing.cast(bool, x.cast_to(types, types, stream_types, False, __runtime__)),
           __ctx__,
         )
     
@@ -478,6 +721,34 @@ class BamlHttpRequestClient:
             "query": query,"passages": passages,
         }, mode="request")
         return __result__
+    async def ContinueDocumentStructure(self, existing_structure: str,pages_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ContinueDocumentStructure", args={
+            "existing_structure": existing_structure,"pages_text": pages_text,
+        }, mode="request")
+        return __result__
+    async def DetectTableOfContents(self, page_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="DetectTableOfContents", args={
+            "page_text": page_text,
+        }, mode="request")
+        return __result__
+    async def ExtractDocumentStructure(self, pages_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ExtractDocumentStructure", args={
+            "pages_text": pages_text,
+        }, mode="request")
+        return __result__
+    async def FindSectionStart(self, section_title: str,pages_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="FindSectionStart", args={
+            "section_title": section_title,"pages_text": pages_text,
+        }, mode="request")
+        return __result__
     async def GenerateAnswer(self, system_prompt: str,context: str,query: str,history: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -485,11 +756,25 @@ class BamlHttpRequestClient:
             "system_prompt": system_prompt,"context": context,"query": query,"history": history,
         }, mode="request")
         return __result__
+    async def GenerateDocDescription(self, tree_structure: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateDocDescription", args={
+            "tree_structure": tree_structure,
+        }, mode="request")
+        return __result__
     async def GenerateHypotheticalDocument(self, query: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateHypotheticalDocument", args={
             "query": query,
+        }, mode="request")
+        return __result__
+    async def GenerateNodeSummary(self, title: str,section_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateNodeSummary", args={
+            "title": title,"section_text": section_text,
         }, mode="request")
         return __result__
     async def GenerateQueryVariants(self, query: str,num_variants: int,
@@ -527,6 +812,13 @@ class BamlHttpRequestClient:
             "query": query,"knowledge_description": knowledge_description,
         }, mode="request")
         return __result__
+    async def ParseTableOfContents(self, toc_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ParseTableOfContents", args={
+            "toc_text": toc_text,
+        }, mode="request")
+        return __result__
     async def RerankChunks(self, query: str,passages: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -539,6 +831,20 @@ class BamlHttpRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="SynthesizeDocument", args={
             "page_analyses": page_analyses,
+        }, mode="request")
+        return __result__
+    async def TreeRetrievalStep(self, query: str,tree_structure: str,accumulated_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="TreeRetrievalStep", args={
+            "query": query,"tree_structure": tree_structure,"accumulated_context": accumulated_context,
+        }, mode="request")
+        return __result__
+    async def VerifySectionPosition(self, title: str,page_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VerifySectionPosition", args={
+            "title": title,"page_text": page_text,
         }, mode="request")
         return __result__
     
@@ -577,6 +883,34 @@ class BamlHttpStreamRequestClient:
             "query": query,"passages": passages,
         }, mode="stream")
         return __result__
+    async def ContinueDocumentStructure(self, existing_structure: str,pages_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ContinueDocumentStructure", args={
+            "existing_structure": existing_structure,"pages_text": pages_text,
+        }, mode="stream")
+        return __result__
+    async def DetectTableOfContents(self, page_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="DetectTableOfContents", args={
+            "page_text": page_text,
+        }, mode="stream")
+        return __result__
+    async def ExtractDocumentStructure(self, pages_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ExtractDocumentStructure", args={
+            "pages_text": pages_text,
+        }, mode="stream")
+        return __result__
+    async def FindSectionStart(self, section_title: str,pages_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="FindSectionStart", args={
+            "section_title": section_title,"pages_text": pages_text,
+        }, mode="stream")
+        return __result__
     async def GenerateAnswer(self, system_prompt: str,context: str,query: str,history: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -584,11 +918,25 @@ class BamlHttpStreamRequestClient:
             "system_prompt": system_prompt,"context": context,"query": query,"history": history,
         }, mode="stream")
         return __result__
+    async def GenerateDocDescription(self, tree_structure: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateDocDescription", args={
+            "tree_structure": tree_structure,
+        }, mode="stream")
+        return __result__
     async def GenerateHypotheticalDocument(self, query: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
         __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateHypotheticalDocument", args={
             "query": query,
+        }, mode="stream")
+        return __result__
+    async def GenerateNodeSummary(self, title: str,section_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="GenerateNodeSummary", args={
+            "title": title,"section_text": section_text,
         }, mode="stream")
         return __result__
     async def GenerateQueryVariants(self, query: str,num_variants: int,
@@ -626,6 +974,13 @@ class BamlHttpStreamRequestClient:
             "query": query,"knowledge_description": knowledge_description,
         }, mode="stream")
         return __result__
+    async def ParseTableOfContents(self, toc_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="ParseTableOfContents", args={
+            "toc_text": toc_text,
+        }, mode="stream")
+        return __result__
     async def RerankChunks(self, query: str,passages: str,
         baml_options: BamlCallOptions = {},
     ) -> baml_py.baml_py.HTTPRequest:
@@ -638,6 +993,20 @@ class BamlHttpStreamRequestClient:
     ) -> baml_py.baml_py.HTTPRequest:
         __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="SynthesizeDocument", args={
             "page_analyses": page_analyses,
+        }, mode="stream")
+        return __result__
+    async def TreeRetrievalStep(self, query: str,tree_structure: str,accumulated_context: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="TreeRetrievalStep", args={
+            "query": query,"tree_structure": tree_structure,"accumulated_context": accumulated_context,
+        }, mode="stream")
+        return __result__
+    async def VerifySectionPosition(self, title: str,page_text: str,
+        baml_options: BamlCallOptions = {},
+    ) -> baml_py.baml_py.HTTPRequest:
+        __result__ = await self.__options.merge_options(baml_options).create_http_request_async(function_name="VerifySectionPosition", args={
+            "title": title,"page_text": page_text,
         }, mode="stream")
         return __result__
     

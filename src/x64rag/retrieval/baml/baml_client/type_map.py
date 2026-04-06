@@ -31,6 +31,12 @@ type_map = {
     "types.DocumentSynthesis": types.DocumentSynthesis,
     "stream_types.DocumentSynthesis": stream_types.DocumentSynthesis,
 
+    "types.ExtractedSection": types.ExtractedSection,
+    "stream_types.ExtractedSection": stream_types.ExtractedSection,
+
+    "types.ExtractedStructure": types.ExtractedStructure,
+    "stream_types.ExtractedStructure": stream_types.ExtractedStructure,
+
     "types.HypotheticalDocument": types.HypotheticalDocument,
     "stream_types.HypotheticalDocument": stream_types.HypotheticalDocument,
 
@@ -63,6 +69,24 @@ type_map = {
 
     "types.SynthesisPageCluster": types.SynthesisPageCluster,
     "stream_types.SynthesisPageCluster": stream_types.SynthesisPageCluster,
+
+    "types.TocDetectionResult": types.TocDetectionResult,
+    "stream_types.TocDetectionResult": stream_types.TocDetectionResult,
+
+    "types.TocEntry": types.TocEntry,
+    "stream_types.TocEntry": stream_types.TocEntry,
+
+    "types.TocStructure": types.TocStructure,
+    "stream_types.TocStructure": stream_types.TocStructure,
+
+    "types.ToolDrillDown": types.ToolDrillDown,
+    "stream_types.ToolDrillDown": stream_types.ToolDrillDown,
+
+    "types.ToolFetchPages": types.ToolFetchPages,
+    "stream_types.ToolFetchPages": stream_types.ToolFetchPages,
+
+    "types.ToolResolvedPages": types.ToolResolvedPages,
+    "stream_types.ToolResolvedPages": stream_types.ToolResolvedPages,
 
 
 }

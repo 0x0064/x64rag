@@ -41,7 +41,7 @@ def all_succeeded(checks: typing.Dict[CheckName, Check]) -> bool:
 # #########################################################################
 
 # #########################################################################
-# Generated classes (16)
+# Generated classes (24)
 # #########################################################################
 
 class AnswerQualityJudgment(BaseModel):
@@ -66,6 +66,14 @@ class DocumentSynthesis(BaseModel):
     cross_references: typing.List["SynthesisCrossReference"]
     page_clusters: typing.List["SynthesisPageCluster"]
     document_summary: str
+
+class ExtractedSection(BaseModel):
+    structure: str = Field(description='hierarchical numbering')
+    title: str = Field(description='section title')
+    start_page: int = Field(description='page where this section begins')
+
+class ExtractedStructure(BaseModel):
+    sections: typing.List["ExtractedSection"] = Field(description='document sections discovered from content')
 
 class HypotheticalDocument(BaseModel):
     passage: str = Field(description='A hypothetical document passage answering the question')
@@ -119,6 +127,30 @@ class SynthesisCrossReference(BaseModel):
 class SynthesisPageCluster(BaseModel):
     pages: typing.List[int]
     reason: str
+
+class TocDetectionResult(BaseModel):
+    has_toc: bool = Field(description='whether the page contains a table of contents')
+    has_page_numbers: bool = Field(description='whether the TOC entries include page numbers')
+
+class TocEntry(BaseModel):
+    structure: str = Field(description='hierarchical numbering, e.g. \'1\', \'1.1\', \'1.1.2\'')
+    title: str = Field(description='section title text')
+    page: typing.Optional[int] = Field(default=None, description='page number if present in TOC, null otherwise')
+
+class TocStructure(BaseModel):
+    entries: typing.List["TocEntry"] = Field(description='ordered list of TOC entries with hierarchy')
+
+class ToolDrillDown(BaseModel):
+    node_id: str = Field(description='ID of the node to explore deeper')
+    reasoning: str = Field(description='why this subtree needs closer inspection')
+
+class ToolFetchPages(BaseModel):
+    pages: str = Field(description='page ranges to retrieve, e.g. \'5-7\' or \'3,8,12-15\'')
+    reasoning: str = Field(description='why these pages are likely relevant to the query')
+
+class ToolResolvedPages(BaseModel):
+    pages: str = Field(description='final relevant page ranges that answer the query')
+    reasoning: str = Field(description='summary of how these pages address the query')
 
 # #########################################################################
 # Generated type aliases (0)
