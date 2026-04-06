@@ -31,14 +31,11 @@ def build_tree(sections: list[dict[str, Any]]) -> list[TreeNode]:
     # Map from structure string to TreeNode for fast parent lookup
     node_map: dict[str, TreeNode] = {}
     roots: list[TreeNode] = []
-    counter = 0
-
-    for section in sections:
+    for counter, section in enumerate(sections, start=1):
         structure: str = section["structure"]
         title: str = section["title"]
         page: int = section["page"]
 
-        counter += 1
         node_id = f"{counter:04d}"
 
         node = TreeNode(

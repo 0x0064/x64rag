@@ -8,7 +8,6 @@ All BAML calls are mocked at the module level.
 
 from __future__ import annotations
 
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -16,7 +15,6 @@ import pytest
 from x64rag.retrieval.common.models import RetrievedChunk, TreeIndex, TreeNode, TreeSearchResult
 from x64rag.retrieval.modules.ingestion.tree.toc import PageContent, TocInfo, TocPath
 from x64rag.retrieval.server import TreeIndexingConfig, TreeSearchConfig
-
 
 # ---------------------------------------------------------------------------
 # Helpers — fake document content
@@ -522,10 +520,7 @@ class TestTreeE2E:
         assert results[0].pages == "6,7"
         assert "Tokyo" in results[0].content or "APAC" in results[0].content
 
-        # Verify second call received accumulated context from the fetch
-        second_call = mock_step.call_args_list[1]
-        accumulated = second_call.kwargs.get("accumulated_context", "") or second_call.args[2] if len(second_call.args) > 2 else ""
-        # The second call should have non-empty accumulated_context
+        # Verify the search made two BAML calls (fetch then resolve)
         assert mock_step.call_count == 2
 
     async def test_tree_index_structure_integrity(
