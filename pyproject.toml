@@ -9,8 +9,6 @@ authors = [
     {name = "frndvrgs", email = "frndvrgs@gmail.com"},
 ]
 
-[project.urls]
-Repository = "https://github.com/0x0064/x64rag"
 dependencies = [
     "openai>=2.30.0",
     "anthropic>=0.86.0",
@@ -28,6 +26,9 @@ dependencies = [
     "lxml>=6.0.2",
     "fastembed>=0.8.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/0x0064/x64rag"
 
 [project.optional-dependencies]
 dev = [
@@ -83,8 +84,6 @@ check = "ruff check ."
 typecheck = "mypy src/"
 test = "pytest"
 "test:cov" = "pytest --cov=x64rag --cov-report=term-missing"
-pcu = "python scripts/pcu.py check"
-"pcu:upgrade" = "python scripts/pcu.py upgrade"
 "baml:generate:retrieval" = "baml-cli generate --from src/x64rag/retrieval/baml_src"
 "baml:generate:reasoning" = "baml-cli generate --from src/x64rag/reasoning/baml_src"
 "baml:test:retrieval" = "baml test --from src/x64rag/retrieval/baml_src"

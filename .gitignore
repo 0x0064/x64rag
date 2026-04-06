@@ -11,4 +11,5 @@ venv/
 htmlcov/
 .coverage
 .claude
+.codex
 docs/plans
