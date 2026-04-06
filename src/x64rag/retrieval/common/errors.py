@@ -44,8 +44,16 @@ class IngestionInterruptedError(IngestionError):
         self.source_id = source_id
 
 
+class TreeIndexingError(IngestionError):
+    """Error during tree index construction."""
+
+
 class RetrievalError(RagError):
     """Error during retrieval pipeline."""
+
+
+class TreeSearchError(RetrievalError):
+    """Error during tree-based search."""
 
 
 class GenerationError(RagError):

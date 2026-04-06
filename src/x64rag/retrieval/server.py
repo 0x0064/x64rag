@@ -119,11 +119,50 @@ class GenerationConfig:
 
 
 @dataclass
+class TreeIndexingConfig:
+    """Configuration for tree-based document indexing."""
+
+    enabled: bool = False
+    model: LanguageModelConfig | None = None
+    toc_scan_pages: int = 20
+    max_pages_per_node: int = 10
+    max_tokens_per_node: int = 20_000
+    generate_summaries: bool = True
+    generate_description: bool = True
+
+    def __post_init__(self) -> None:
+        if self.toc_scan_pages < 1:
+            raise ConfigurationError("toc_scan_pages must be positive")
+        if self.max_pages_per_node < 1:
+            raise ConfigurationError("max_pages_per_node must be positive")
+        if self.max_tokens_per_node < 1:
+            raise ConfigurationError("max_tokens_per_node must be positive")
+
+
+@dataclass
+class TreeSearchConfig:
+    """Configuration for tree-based search."""
+
+    enabled: bool = False
+    model: LanguageModelConfig | None = None
+    max_steps: int = 5
+    max_context_tokens: int = 50_000
+
+    def __post_init__(self) -> None:
+        if self.max_steps < 1:
+            raise ConfigurationError("max_steps must be positive")
+        if self.max_context_tokens < 1:
+            raise ConfigurationError("max_context_tokens must be positive")
+
+
+@dataclass
 class RagServerConfig:
     persistence: PersistenceConfig
     ingestion: IngestionConfig
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
     generation: GenerationConfig = field(default_factory=GenerationConfig)
+    tree_indexing: TreeIndexingConfig = field(default_factory=TreeIndexingConfig)
+    tree_search: TreeSearchConfig = field(default_factory=TreeSearchConfig)
 
 
 def _derive_embedding_model_name(embeddings: BaseEmbeddings) -> str:

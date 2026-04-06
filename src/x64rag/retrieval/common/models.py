@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Literal
@@ -99,3 +101,80 @@ class SourceStats:
     total_hits: int = 0
     grounded_hits: int = 0
     ungrounded_hits: int = 0
+
+
+@dataclass
+class TreeNode:
+    """A node in the document tree index."""
+
+    node_id: str
+    title: str
+    start_index: int
+    end_index: int
+    summary: str | None = None
+    children: list[TreeNode] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "node_id": self.node_id,
+            "title": self.title,
+            "start_index": self.start_index,
+            "end_index": self.end_index,
+            "summary": self.summary,
+            "children": [c.to_dict() for c in self.children],
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TreeNode:
+        return cls(
+            node_id=data["node_id"],
+            title=data["title"],
+            start_index=data["start_index"],
+            end_index=data["end_index"],
+            summary=data.get("summary"),
+            children=[cls.from_dict(c) for c in data.get("children", [])],
+        )
+
+
+@dataclass
+class TreeIndex:
+    """Complete tree index for a document."""
+
+    source_id: str
+    doc_name: str
+    doc_description: str | None
+    structure: list[TreeNode]
+    page_count: int
+    created_at: datetime
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "source_id": self.source_id,
+            "doc_name": self.doc_name,
+            "doc_description": self.doc_description,
+            "structure": [n.to_dict() for n in self.structure],
+            "page_count": self.page_count,
+            "created_at": self.created_at.isoformat(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TreeIndex:
+        return cls(
+            source_id=data["source_id"],
+            doc_name=data["doc_name"],
+            doc_description=data.get("doc_description"),
+            structure=[TreeNode.from_dict(n) for n in data["structure"]],
+            page_count=data["page_count"],
+            created_at=datetime.fromisoformat(data["created_at"]),
+        )
+
+
+@dataclass
+class TreeSearchResult:
+    """Result from tree-based search."""
+
+    node_id: str
+    title: str
+    pages: str
+    content: str
+    reasoning: str
