@@ -45,6 +45,7 @@ class RetrievalService:
         query: str,
         knowledge_id: str | None = None,
         top_k: int | None = None,
+        tree_chunks: list[RetrievedChunk] | None = None,
     ) -> list[RetrievedChunk]:
         if not query or not query.strip():
             return []
@@ -75,6 +76,10 @@ class RetrievalService:
         all_result_lists: list[list[RetrievedChunk]] = []
         for result_lists in query_results:
             all_result_lists.extend(result_lists)
+
+        if tree_chunks:
+            all_result_lists.append(tree_chunks)
+            logger.info("%d tree search candidates added to fusion", len(tree_chunks))
 
         if len(all_result_lists) > 1:
             fused = reciprocal_rank_fusion(all_result_lists, source_type_weights=self._source_type_weights)

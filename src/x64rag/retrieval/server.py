@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from x64rag.retrieval.common.errors import ConfigurationError
-from x64rag.retrieval.common.language_model import LanguageModelConfig
+from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.common.models import RetrievedChunk, Source
 from x64rag.retrieval.modules.generation.models import QueryResult, StepResult, StreamEvent
@@ -184,6 +184,8 @@ class RagServer:
         self._knowledge_manager: KnowledgeManager | None = None
         self._keyword_search: KeywordSearch | None = None
         self._step_service: StepGenerationService | None = None
+        self._tree_indexing_service: Any = None
+        self._tree_search_service: Any = None
 
         self._retrieval_by_collection: dict[str, tuple[RetrievalService, StructuredRetrievalService | None]] = {}
         self._ingestion_by_collection: dict[str, IngestionService] = {}
@@ -358,6 +360,31 @@ class RagServer:
         if stale:
             logger.warning("%d sources are stale and need re-ingestion", stale)
 
+        # Tree indexing service
+        self._tree_indexing_service = None
+        if cfg.tree_indexing.enabled and persistence.metadata_store:
+            from x64rag.retrieval.modules.ingestion.tree.service import TreeIndexingService
+
+            tree_idx_registry = build_registry(cfg.tree_indexing.model) if cfg.tree_indexing.model else None
+            self._tree_indexing_service = TreeIndexingService(
+                config=cfg.tree_indexing,
+                metadata_store=persistence.metadata_store,
+                registry=tree_idx_registry,
+            )
+            logger.info("tree indexing: enabled")
+
+        # Tree search service
+        self._tree_search_service = None
+        if cfg.tree_search.enabled:
+            from x64rag.retrieval.modules.retrieval.tree.service import TreeSearchService
+
+            tree_search_registry = build_registry(cfg.tree_search.model) if cfg.tree_search.model else None
+            self._tree_search_service = TreeSearchService(
+                config=cfg.tree_search,
+                registry=tree_search_registry,
+            )
+            logger.info("tree search: enabled")
+
         self._initialized = True
 
         flows = self._enabled_flows()
@@ -405,6 +432,7 @@ class RagServer:
         resume_from_chunk: int = 0,
         on_progress: Callable[[int, int], Awaitable[None]] | None = None,
         collection: str | None = None,
+        tree_index: bool = False,
     ) -> Source:
         """Ingest a file. Routes to unstructured or structured based on extension."""
         self._check_initialized()
@@ -424,7 +452,7 @@ class RagServer:
             return source
 
         ingestion_svc = self._get_ingestion(collection)
-        return await ingestion_svc.ingest(
+        source = await ingestion_svc.ingest(
             file_path=file_path,
             knowledge_id=knowledge_id,
             source_type=source_type,
@@ -433,6 +461,37 @@ class RagServer:
             resume_from_chunk=resume_from_chunk,
             on_progress=on_progress,
         )
+
+        # Tree indexing: build and persist tree index after ingestion
+        if tree_index and self._tree_indexing_service:
+            from x64rag.retrieval.modules.ingestion.chunk.parsers.pdf import PDFParser
+            from x64rag.retrieval.modules.ingestion.tree.toc import PageContent
+
+            # Re-parse the document to get page-level text for tree indexing.
+            # Only PDF files support page-level tree indexing currently.
+            if ext == ".pdf":
+                parser = PDFParser()
+                parsed_pages = parser.parse(str(file_path))
+                pages = [
+                    PageContent(
+                        index=p.page_number,
+                        text=p.content,
+                        token_count=len(p.content) // 4,
+                    )
+                    for p in parsed_pages
+                ]
+                doc_name = (metadata or {}).get("name", file_path.name)
+                tree_idx = await self._tree_indexing_service.build_tree_index(
+                    source_id=source.source_id,
+                    doc_name=doc_name,
+                    pages=pages,
+                )
+                await self._tree_indexing_service.save_tree_index(tree_idx)
+                logger.info("tree index built for source %s (%d pages)", source.source_id, len(pages))
+            else:
+                logger.warning("tree_index=True but file type %s does not support tree indexing", ext)
+
+        return source
 
     async def ingest_text(
         self,
@@ -661,6 +720,17 @@ class RagServer:
         else:
             chunks = await unstructured.retrieve(query=retrieval_query, knowledge_id=knowledge_id)
 
+        # TODO: Tree search integration
+        # When self._tree_search_service is set, load tree indexes from the metadata store
+        # for sources matching knowledge_id, run tree search, convert results to RetrievedChunk
+        # via TreeSearchService.to_retrieved_chunks(), and merge with existing chunks.
+        # This requires page content (list[PageContent]) at query time, which means either:
+        # - Re-reading the original document (requires file path from metadata)
+        # - Storing pages alongside the tree index in the metadata store
+        # - Reconstructing pages from the document store content
+        # For now, tree search is wired for initialization only; retrieval integration
+        # will be completed once page content access at query time is resolved.
+
         if min_score is not None:
             chunks = [c for c in chunks if c.score >= min_score]
         return chunks
@@ -703,6 +773,10 @@ class RagServer:
             flows.append("structured")
         if self._generation_service:
             flows.append("generation")
+        if self._tree_indexing_service:
+            flows.append("tree-indexing")
+        if self._tree_search_service:
+            flows.append("tree-search")
         return flows
 
     @staticmethod
