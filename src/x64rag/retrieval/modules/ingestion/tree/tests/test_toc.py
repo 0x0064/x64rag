@@ -20,10 +20,12 @@ def _make_pages(texts: list[str]) -> list[PageContent]:
 
 async def test_detect_toc_finds_toc_with_page_numbers():
     """detect_toc returns WITH_PAGE_NUMBERS when a TOC with page numbers is found."""
-    pages = _make_pages([
-        "Table of Contents\n1. Introduction ... 1\n2. Methods ... 5",
-        "Some body text about the project.",
-    ])
+    pages = _make_pages(
+        [
+            "Table of Contents\n1. Introduction ... 1\n2. Methods ... 5",
+            "Some body text about the project.",
+        ]
+    )
 
     mock_result_toc = MagicMock()
     mock_result_toc.has_toc = True
@@ -46,10 +48,12 @@ async def test_detect_toc_finds_toc_with_page_numbers():
 
 async def test_detect_toc_finds_toc_without_page_numbers():
     """detect_toc returns WITHOUT_PAGE_NUMBERS when TOC lacks page numbers."""
-    pages = _make_pages([
-        "Contents\n- Introduction\n- Background\n- Methods",
-        "Body text here.",
-    ])
+    pages = _make_pages(
+        [
+            "Contents\n- Introduction\n- Background\n- Methods",
+            "Body text here.",
+        ]
+    )
 
     mock_result_toc = MagicMock()
     mock_result_toc.has_toc = True
@@ -70,10 +74,12 @@ async def test_detect_toc_finds_toc_without_page_numbers():
 
 async def test_detect_toc_no_toc_found():
     """detect_toc returns NO_TOC when no pages contain a TOC."""
-    pages = _make_pages([
-        "This is just regular body text.",
-        "More regular body text.",
-    ])
+    pages = _make_pages(
+        [
+            "This is just regular body text.",
+            "More regular body text.",
+        ]
+    )
 
     mock_result = MagicMock()
     mock_result.has_toc = False
@@ -99,11 +105,13 @@ async def test_page_content_dataclass():
 
 async def test_verify_section_positions():
     """verify_section_positions calls BAML and marks sections as verified or not."""
-    pages = _make_pages([
-        "Introduction\nThis is the introduction section.",
-        "Methods\nWe describe the methods used.",
-        "Results\nHere are the results.",
-    ])
+    pages = _make_pages(
+        [
+            "Introduction\nThis is the introduction section.",
+            "Methods\nWe describe the methods used.",
+            "Results\nHere are the results.",
+        ]
+    )
 
     sections = [
         {"structure": "1", "title": "Introduction", "page": 0},
@@ -129,13 +137,15 @@ async def test_verify_section_positions():
 
 async def test_detect_toc_respects_scan_limit():
     """detect_toc only scans up to toc_scan_pages, not the whole document."""
-    pages = _make_pages([
-        "Page 0 text",
-        "Page 1 text",
-        "Page 2 text",
-        "Page 3 text",
-        "Page 4 text",
-    ])
+    pages = _make_pages(
+        [
+            "Page 0 text",
+            "Page 1 text",
+            "Page 2 text",
+            "Page 3 text",
+            "Page 4 text",
+        ]
+    )
 
     mock_result = MagicMock()
     mock_result.has_toc = False
@@ -151,9 +161,11 @@ async def test_detect_toc_respects_scan_limit():
 
 async def test_parse_toc_returns_entries():
     """parse_toc concatenates TOC pages and returns parsed entries."""
-    toc_pages = _make_pages([
-        "1. Introduction ... 1\n2. Methods ... 5",
-    ])
+    toc_pages = _make_pages(
+        [
+            "1. Introduction ... 1\n2. Methods ... 5",
+        ]
+    )
 
     mock_entry_1 = MagicMock()
     mock_entry_1.structure = "1"

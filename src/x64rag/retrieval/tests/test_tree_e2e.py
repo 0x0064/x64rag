@@ -20,6 +20,7 @@ from x64rag.retrieval.server import TreeIndexingConfig, TreeSearchConfig
 # Helpers — fake document content
 # ---------------------------------------------------------------------------
 
+
 def _make_annual_report_pages() -> list[PageContent]:
     """Create a fake 8-page annual report with realistic content."""
     page_texts = [
@@ -98,10 +99,7 @@ def _make_annual_report_pages() -> list[PageContent]:
         ),
     ]
 
-    return [
-        PageContent(index=i + 1, text=text, token_count=len(text) // 4)
-        for i, text in enumerate(page_texts)
-    ]
+    return [PageContent(index=i + 1, text=text, token_count=len(text) // 4) for i, text in enumerate(page_texts)]
 
 
 # The TOC entries that parse_toc should return (matching page 1 content)
@@ -173,15 +171,19 @@ class TestTreeE2E:
 
     def _mock_verify_section_positions(self) -> AsyncMock:
         """Return a mock verify_section_positions that marks all sections as verified."""
+
         async def _verify(sections, pages, registry):
             return [{**s, "verified": True} for s in sections]
+
         mock = AsyncMock(side_effect=_verify)
         return mock
 
     def _mock_generate_node_summary(self) -> AsyncMock:
         """Return a mock for b.GenerateNodeSummary."""
+
         async def _summarize(title, section_text, baml_options=None):
             return f"Summary of {title}"
+
         return AsyncMock(side_effect=_summarize)
 
     def _mock_generate_doc_description(self) -> AsyncMock:
@@ -344,8 +346,10 @@ class TestTreeE2E:
         assert chunk.chunk_id.startswith("tree-")
         assert chunk.source_metadata["name"] == "ACME Corp Annual Report 2025"
         assert chunk.source_metadata["tree_pages"] == "3,4"
-        assert "revenue" in chunk.source_metadata["tree_reasoning"].lower() or \
-               "financial" in chunk.source_metadata["tree_reasoning"].lower()
+        assert (
+            "revenue" in chunk.source_metadata["tree_reasoning"].lower()
+            or "financial" in chunk.source_metadata["tree_reasoning"].lower()
+        )
 
     async def test_search_with_drill_down_then_resolve(
         self,
@@ -651,6 +655,7 @@ class TestTreeE2E:
 # ---------------------------------------------------------------------------
 # Utility
 # ---------------------------------------------------------------------------
+
 
 def _collect_all_nodes(nodes: list[TreeNode]) -> list[TreeNode]:
     """Flatten a tree of TreeNodes into a flat list."""

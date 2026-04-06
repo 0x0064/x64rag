@@ -35,9 +35,7 @@ class TestTreeIndexJsonRoundtrip:
 
     def test_nested_structure_roundtrip(self):
         now = datetime(2026, 1, 15, 8, 30, 0)
-        grandchild = TreeNode(
-            node_id="n3", title="Section 1.1.1", start_index=0, end_index=20, summary="Deep section"
-        )
+        grandchild = TreeNode(node_id="n3", title="Section 1.1.1", start_index=0, end_index=20, summary="Deep section")
         child = TreeNode(
             node_id="n2", title="Section 1.1", start_index=0, end_index=50, summary="Sub section", children=[grandchild]
         )

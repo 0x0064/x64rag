@@ -90,11 +90,13 @@ async def parse_toc(
 
     entries = []
     for entry in result.entries:
-        entries.append({
-            "structure": entry.structure,
-            "title": entry.title,
-            "page": entry.page,
-        })
+        entries.append(
+            {
+                "structure": entry.structure,
+                "title": entry.title,
+                "page": entry.page,
+            }
+        )
 
     logger.debug("parsed %d TOC entries", len(entries))
     return entries
@@ -112,9 +114,7 @@ async def find_section_starts(
     """
     from x64rag.retrieval.baml.baml_client.async_client import b
 
-    pages_text = "\n".join(
-        f"--- Page {page.index} ---\n{page.text}" for page in pages
-    )
+    pages_text = "\n".join(f"--- Page {page.index} ---\n{page.text}" for page in pages)
 
     updated: list[dict[str, Any]] = []
     for entry in entries:
@@ -128,10 +128,12 @@ async def find_section_starts(
             baml_options={"client_registry": registry},
         )
 
-        updated.append({
-            **entry,
-            "page": page_num,
-        })
+        updated.append(
+            {
+                **entry,
+                "page": page_num,
+            }
+        )
         logger.debug("found start for '%s' at page %d", entry["title"], page_num)
 
     return updated

@@ -165,9 +165,7 @@ class TreeIndexingService:
 
         for i in range(0, len(pages), PAGES_PER_GROUP):
             group = pages[i : i + PAGES_PER_GROUP]
-            pages_text = "\n".join(
-                f"--- Page {page.index} ---\n{page.text}" for page in group
-            )
+            pages_text = "\n".join(f"--- Page {page.index} ---\n{page.text}" for page in group)
 
             if i == 0:
                 # First group: extract from scratch
@@ -185,11 +183,13 @@ class TreeIndexingService:
                 )
 
             for section in result.sections:
-                all_sections.append({
-                    "structure": section.structure,
-                    "title": section.title,
-                    "page": section.start_page,
-                })
+                all_sections.append(
+                    {
+                        "structure": section.structure,
+                        "title": section.title,
+                        "page": section.start_page,
+                    }
+                )
 
         return all_sections
 
@@ -217,9 +217,7 @@ class TreeIndexingService:
 
             # Build section text from the node's page range
             section_pages = [
-                page_by_index[idx]
-                for idx in range(node.start_index, node.end_index + 1)
-                if idx in page_by_index
+                page_by_index[idx] for idx in range(node.start_index, node.end_index + 1) if idx in page_by_index
             ]
             section_text = "\n".join(p.text for p in section_pages)
 

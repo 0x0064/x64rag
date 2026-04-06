@@ -15,10 +15,7 @@ from x64rag.retrieval.modules.ingestion.tree.toc import PageContent, TocInfo, To
 
 def _make_pages(n: int) -> list[PageContent]:
     """Create a list of mock PageContent objects."""
-    return [
-        PageContent(index=i + 1, text=f"Page {i + 1} content", token_count=100)
-        for i in range(n)
-    ]
+    return [PageContent(index=i + 1, text=f"Page {i + 1} content", token_count=100) for i in range(n)]
 
 
 @dataclass
@@ -49,9 +46,7 @@ class TestIndexWithToc:
             {"structure": "3", "title": "Results", "page": 20},
         ]
 
-        verified_entries = [
-            {**e, "verified": True} for e in parsed_entries
-        ]
+        verified_entries = [{**e, "verified": True} for e in parsed_entries]
 
         with (
             patch(
@@ -120,9 +115,7 @@ class TestIndexWithTocWithoutPageNumbers:
             {"structure": "2", "title": "Chapter 2", "page": 10},
         ]
 
-        verified_entries = [
-            {**e, "verified": True} for e in entries_with_pages
-        ]
+        verified_entries = [{**e, "verified": True} for e in entries_with_pages]
 
         with (
             patch(
@@ -178,9 +171,7 @@ class TestIndexNoToc:
             {"structure": "2", "title": "Details", "page": 5},
         ]
 
-        verified_sections = [
-            {**s, "verified": True} for s in extracted_sections
-        ]
+        verified_sections = [{**s, "verified": True} for s in extracted_sections]
 
         with (
             patch(
@@ -233,9 +224,7 @@ class TestIndexSavesToMetadataStore:
             {"structure": "1", "title": "Section A", "page": 1},
         ]
 
-        verified_sections = [
-            {**s, "verified": True} for s in extracted_sections
-        ]
+        verified_sections = [{**s, "verified": True} for s in extracted_sections]
 
         with (
             patch(
@@ -424,9 +413,7 @@ class TestGenerateDocDescription:
         metadata_store = AsyncMock()
 
         mock_b = AsyncMock()
-        mock_b.GenerateDocDescription = AsyncMock(
-            return_value="This document covers research methods."
-        )
+        mock_b.GenerateDocDescription = AsyncMock(return_value="This document covers research methods.")
 
         with patch(BAML_CLIENT, mock_b):
             service = TreeIndexingService(config, metadata_store, registry=None)

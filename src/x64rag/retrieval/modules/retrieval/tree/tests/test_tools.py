@@ -11,7 +11,6 @@ from x64rag.retrieval.modules.retrieval.tree.tools import (
     serialize_tree_for_prompt,
 )
 
-
 # --- parse_page_ranges ---
 
 

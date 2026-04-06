@@ -30,10 +30,7 @@ def _make_tree_index() -> TreeIndex:
 
 
 def _make_pages() -> list[PageContent]:
-    return [
-        PageContent(index=i, text=f"Content of page {i}.", token_count=20)
-        for i in range(1, 11)
-    ]
+    return [PageContent(index=i, text=f"Content of page {i}.", token_count=20) for i in range(1, 11)]
 
 
 class _FakeResolvedPages:
