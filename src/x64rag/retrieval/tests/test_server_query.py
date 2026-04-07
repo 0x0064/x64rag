@@ -20,16 +20,17 @@ def _make_server() -> RagServer:
     server = RagServer.__new__(RagServer)
     server._config = config
     server._initialized = True
-    server._unstructured_retrieval = AsyncMock()
-    server._unstructured_retrieval.retrieve = AsyncMock(return_value=[_chunk("c1"), _chunk("c2")])
+    server._retrieval_service = AsyncMock()
+    server._retrieval_service.retrieve = AsyncMock(return_value=[_chunk("c1"), _chunk("c2")])
     server._structured_retrieval = None
     server._generation_service = AsyncMock()
     server._generation_service.generate = AsyncMock(return_value=_query_result())
     server._step_service = None
     server._knowledge_manager = None
-    server._keyword_search = None
-    server._unstructured_ingestion = None
+    server._ingestion_service = None
     server._structured_ingestion = None
+    server._retrieval_namespace = None
+    server._ingestion_namespace = None
     server._tree_indexing_service = None
     server._tree_search_service = None
     return server
@@ -40,7 +41,7 @@ class TestServerQuery:
         server = _make_server()
         result = await server.query("What is the rating?", knowledge_id="k1")
 
-        server._unstructured_retrieval.retrieve.assert_awaited_once()
+        server._retrieval_service.retrieve.assert_awaited_once()
         server._generation_service.generate.assert_awaited_once()
         assert result.answer == "The answer is 42."
 
@@ -55,7 +56,7 @@ class TestServerQuery:
         server = _make_server()
         await server.query("follow up", history=[("what is X?", "X is Y")])
 
-        retrieval_call = server._unstructured_retrieval.retrieve.call_args
+        retrieval_call = server._retrieval_service.retrieve.call_args
         retrieval_query = retrieval_call.kwargs["query"]
         assert "follow up" in retrieval_query
         assert "what is X?" in retrieval_query
@@ -167,7 +168,7 @@ class TestServerGenerateStep:
 class TestMinScore:
     async def test_retrieve_filters_by_min_score(self):
         server = _make_server()
-        server._unstructured_retrieval.retrieve = AsyncMock(
+        server._retrieval_service.retrieve = AsyncMock(
             return_value=[_chunk("high", 0.9), _chunk("mid", 0.5), _chunk("low", 0.3)]
         )
         chunks = await server.retrieve("test", min_score=0.4)
@@ -178,13 +179,13 @@ class TestMinScore:
 
     async def test_retrieve_no_filter_when_none(self):
         server = _make_server()
-        server._unstructured_retrieval.retrieve = AsyncMock(return_value=[_chunk("a", 0.9), _chunk("b", 0.1)])
+        server._retrieval_service.retrieve = AsyncMock(return_value=[_chunk("a", 0.9), _chunk("b", 0.1)])
         chunks = await server.retrieve("test", min_score=None)
         assert len(chunks) == 2
 
     async def test_query_filters_by_min_score(self):
         server = _make_server()
-        server._unstructured_retrieval.retrieve = AsyncMock(return_value=[_chunk("high", 0.9), _chunk("low", 0.2)])
+        server._retrieval_service.retrieve = AsyncMock(return_value=[_chunk("high", 0.9), _chunk("low", 0.2)])
         await server.query("test", min_score=0.5)
 
         gen_call = server._generation_service.generate.call_args

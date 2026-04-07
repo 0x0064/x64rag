@@ -22,16 +22,22 @@ from x64rag.retrieval.modules.ingestion.chunk.chunker import SemanticChunker
 from x64rag.retrieval.modules.ingestion.chunk.service import IngestionService
 from x64rag.retrieval.modules.ingestion.embeddings.base import BaseEmbeddings
 from x64rag.retrieval.modules.ingestion.embeddings.sparse.base import BaseSparseEmbeddings
+from x64rag.retrieval.modules.ingestion.methods.document import DocumentIngestion
+from x64rag.retrieval.modules.ingestion.methods.graph import GraphIngestion
+from x64rag.retrieval.modules.ingestion.methods.tree import TreeIngestion
+from x64rag.retrieval.modules.ingestion.methods.vector import VectorIngestion
 from x64rag.retrieval.modules.ingestion.vision.base import BaseVision
 from x64rag.retrieval.modules.knowledge.manager import KnowledgeManager
 from x64rag.retrieval.modules.knowledge.migration import check_embedding_migration
+from x64rag.retrieval.modules.namespace import MethodNamespace
 from x64rag.retrieval.modules.retrieval.enrich.service import StructuredRetrievalService
+from x64rag.retrieval.modules.retrieval.methods.document import DocumentRetrieval
+from x64rag.retrieval.modules.retrieval.methods.graph import GraphRetrieval
+from x64rag.retrieval.modules.retrieval.methods.vector import VectorRetrieval
 from x64rag.retrieval.modules.retrieval.refinement.base import BaseChunkRefiner
-from x64rag.retrieval.modules.retrieval.search.keyword import KeywordSearch
 from x64rag.retrieval.modules.retrieval.search.reranking.base import BaseReranking
 from x64rag.retrieval.modules.retrieval.search.rewriting.base import BaseQueryRewriter
 from x64rag.retrieval.modules.retrieval.search.service import RetrievalService
-from x64rag.retrieval.modules.retrieval.search.vector import VectorSearch
 from x64rag.retrieval.stores.document.base import BaseDocumentStore
 from x64rag.retrieval.stores.graph.base import BaseGraphStore
 from x64rag.retrieval.stores.metadata.base import BaseMetadataStore
@@ -50,7 +56,7 @@ DEFAULT_SYSTEM_PROMPT = (
 
 @dataclass
 class PersistenceConfig:
-    vector_store: BaseVectorStore
+    vector_store: BaseVectorStore | None = None
     metadata_store: BaseMetadataStore | None = None
     document_store: BaseDocumentStore | None = None
     graph_store: BaseGraphStore | None = None
@@ -58,7 +64,7 @@ class PersistenceConfig:
 
 @dataclass
 class IngestionConfig:
-    embeddings: BaseEmbeddings
+    embeddings: BaseEmbeddings | None = None
     vision: BaseVision | None = None
     chunk_size: int = 500
     chunk_overlap: int = 50
@@ -180,16 +186,18 @@ class RagServer:
         self._config = config
         self._initialized = False
 
-        self._unstructured_ingestion: IngestionService | None = None
+        self._ingestion_service: IngestionService | None = None
         self._structured_ingestion: StructuredIngestionService | None = None
-        self._unstructured_retrieval: RetrievalService | None = None
+        self._retrieval_service: RetrievalService | None = None
         self._structured_retrieval: StructuredRetrievalService | None = None
         self._generation_service: GenerationService | None = None
         self._knowledge_manager: KnowledgeManager | None = None
-        self._keyword_search: KeywordSearch | None = None
         self._step_service: StepGenerationService | None = None
         self._tree_indexing_service: TreeIndexingService | None = None
         self._tree_search_service: TreeSearchService | None = None
+
+        self._retrieval_namespace: MethodNamespace | None = None
+        self._ingestion_namespace: MethodNamespace | None = None
 
         self._retrieval_by_collection: dict[str, tuple[RetrievalService, StructuredRetrievalService | None]] = {}
         self._ingestion_by_collection: dict[str, IngestionService] = {}
@@ -207,12 +215,58 @@ class RagServer:
     def collections(self) -> list[str]:
         """Available Qdrant collections."""
         store = self._config.persistence.vector_store
-        if hasattr(store, "collections"):
+        if store and hasattr(store, "collections"):
             return store.collections  # type: ignore[no-any-return]
         return []
 
+    @property
+    def retrieval(self) -> MethodNamespace:
+        """Namespace of configured retrieval methods."""
+        self._check_initialized()
+        assert self._retrieval_namespace is not None
+        return self._retrieval_namespace
+
+    @property
+    def ingestion(self) -> MethodNamespace:
+        """Namespace of configured ingestion methods."""
+        self._check_initialized()
+        assert self._ingestion_namespace is not None
+        return self._ingestion_namespace
+
+    def _validate_config(self) -> None:
+        """Cross-config validation: ensure at least one retrieval path and required deps."""
+        cfg = self._config
+        p = cfg.persistence
+        i = cfg.ingestion
+
+        has_vector = p.vector_store is not None and i.embeddings is not None
+        has_document = p.document_store is not None
+        has_graph = p.graph_store is not None
+
+        if not any([has_vector, has_document, has_graph]):
+            raise ConfigurationError(
+                "At least one retrieval path must be configured: "
+                "vector (vector_store + embeddings), "
+                "document (document_store), or graph (graph_store)"
+            )
+
+        if p.vector_store and not i.embeddings:
+            raise ConfigurationError("vector_store requires embeddings")
+        if i.embeddings and not p.vector_store:
+            raise ConfigurationError("embeddings requires vector_store")
+
+        if has_graph and not i.lm_config:
+            raise ConfigurationError("graph_store requires ingestion.lm_config for entity extraction")
+
+        if cfg.tree_indexing.enabled and not p.metadata_store:
+            raise ConfigurationError("tree_indexing requires metadata_store")
+        if cfg.tree_search.enabled and not p.metadata_store:
+            raise ConfigurationError("tree_search requires metadata_store")
+
     async def initialize(self) -> None:
         """Wire all modules and check embedding model consistency."""
+        self._validate_config()
+
         cfg = self._config
         persistence = cfg.persistence
         ingestion = cfg.ingestion
@@ -221,53 +275,109 @@ class RagServer:
 
         logger.info("ragserver initializing")
 
+        # Initialize stores
         if persistence.metadata_store:
             await persistence.metadata_store.initialize()
-            logger.info("persistence: vector + metadata stores")
-        else:
-            logger.info("persistence: vector store only")
-
         if persistence.document_store:
             await persistence.document_store.initialize()
-            logger.info("persistence: document store enabled")
-
         if persistence.graph_store:
             await persistence.graph_store.initialize()
-            logger.info("persistence: graph store enabled")
 
-        vector_size = await ingestion.embeddings.embedding_dimension()
-        await persistence.vector_store.initialize(vector_size)
+        ingestion_methods: list = []
+        retrieval_methods: list = []
 
-        self._embedding_model_name = _derive_embedding_model_name(ingestion.embeddings)
+        # Vector path
+        if persistence.vector_store and ingestion.embeddings:
+            vector_size = await ingestion.embeddings.embedding_dimension()
+            await persistence.vector_store.initialize(vector_size)
 
+            self._embedding_model_name = _derive_embedding_model_name(ingestion.embeddings)
+
+            if retrieval.bm25_enabled and ingestion.sparse_embeddings:
+                logger.warning("sparse_embeddings configured — bm25_enabled ignored")
+
+            ingestion_methods.append(
+                VectorIngestion(
+                    vector_store=persistence.vector_store,
+                    embeddings=ingestion.embeddings,
+                    embedding_model_name=self._embedding_model_name,
+                    sparse_embeddings=ingestion.sparse_embeddings,
+                )
+            )
+            retrieval_methods.append(
+                VectorRetrieval(
+                    vector_store=persistence.vector_store,
+                    embeddings=ingestion.embeddings,
+                    sparse_embeddings=ingestion.sparse_embeddings,
+                    parent_expansion=retrieval.parent_expansion,
+                    bm25_enabled=retrieval.bm25_enabled and not bool(ingestion.sparse_embeddings),
+                    bm25_max_indexes=retrieval.bm25_max_indexes,
+                    weight=1.0,
+                )
+            )
+
+        # Document path
+        if persistence.document_store:
+            ingestion_methods.append(DocumentIngestion(document_store=persistence.document_store))
+            retrieval_methods.append(DocumentRetrieval(document_store=persistence.document_store, weight=0.8))
+
+        # Graph path
+        if persistence.graph_store:
+            ingestion_methods.append(GraphIngestion(graph_store=persistence.graph_store))
+            retrieval_methods.append(GraphRetrieval(graph_store=persistence.graph_store, weight=0.7))
+
+        # Chunker
         self._chunker = SemanticChunker(
             chunk_size=ingestion.chunk_size,
             chunk_overlap=ingestion.chunk_overlap,
             parent_chunk_size=ingestion.parent_chunk_size,
             parent_chunk_overlap=ingestion.parent_chunk_overlap,
         )
-        chunker = self._chunker
 
-        if retrieval.bm25_enabled and ingestion.sparse_embeddings:
-            logger.warning("sparse_embeddings configured — bm25_enabled ignored (sparse vectors replace BM25)")
-        elif retrieval.bm25_enabled:
-            self._keyword_search = KeywordSearch(persistence.vector_store, max_indexes=retrieval.bm25_max_indexes)
+        # Tree indexing service
+        self._tree_indexing_service = None
+        if cfg.tree_indexing.enabled and persistence.metadata_store:
+            from x64rag.retrieval.modules.ingestion.tree.service import TreeIndexingService
 
-        self._unstructured_ingestion = IngestionService(
-            embeddings=ingestion.embeddings,
-            chunker=chunker,
-            vector_store=persistence.vector_store,
+            tree_idx_registry = build_registry(cfg.tree_indexing.model) if cfg.tree_indexing.model else None
+            self._tree_indexing_service = TreeIndexingService(
+                config=cfg.tree_indexing,
+                metadata_store=persistence.metadata_store,
+                registry=tree_idx_registry,
+            )
+            ingestion_methods.append(TreeIngestion(tree_service=self._tree_indexing_service))
+            logger.info("tree indexing: enabled")
+
+        # Tree search service (requires metadata store for loading tree indexes)
+        self._tree_search_service = None
+        if cfg.tree_search.enabled and persistence.metadata_store:
+            from x64rag.retrieval.modules.retrieval.tree.service import TreeSearchService
+
+            tree_search_registry = build_registry(cfg.tree_search.model) if cfg.tree_search.model else None
+            self._tree_search_service = TreeSearchService(
+                config=cfg.tree_search,
+                registry=tree_search_registry,
+            )
+            logger.info("tree search: enabled")
+
+        # Build namespaces (public API)
+        self._retrieval_namespace = MethodNamespace(retrieval_methods)
+        self._ingestion_namespace = MethodNamespace(ingestion_methods)
+
+        # Build services
+        self._ingestion_service = IngestionService(
+            chunker=self._chunker,
+            ingestion_methods=ingestion_methods,
             embedding_model_name=self._embedding_model_name,
             source_type_weights=retrieval.source_type_weights,
             metadata_store=persistence.metadata_store,
             on_ingestion_complete=self._on_ingestion_complete,
             vision_parser=ingestion.vision,
-            document_store=persistence.document_store,
-            sparse_embeddings=ingestion.sparse_embeddings,
             contextual_chunking=ingestion.contextual_chunking,
         )
 
-        if persistence.metadata_store:
+        # Structured ingestion (unchanged — still takes stores directly)
+        if persistence.metadata_store and persistence.vector_store and ingestion.embeddings:
             self._structured_ingestion = StructuredIngestionService(
                 embeddings=ingestion.embeddings,
                 vector_store=persistence.vector_store,
@@ -284,49 +394,43 @@ class RagServer:
             if not ingestion.vision:
                 logger.warning("no vision provider — structured PDF analysis disabled")
 
-        vector_search = VectorSearch(
-            vector_store=persistence.vector_store,
-            embeddings=ingestion.embeddings,
-            sparse_embeddings=ingestion.sparse_embeddings,
-            parent_expansion=retrieval.parent_expansion,
-        )
-        self._unstructured_retrieval = RetrievalService(
-            vector_search=vector_search,
-            keyword_search=self._keyword_search,
+        self._retrieval_service = RetrievalService(
+            retrieval_methods=retrieval_methods,
             reranking=retrieval.reranker,
             top_k=retrieval.top_k,
             source_type_weights=retrieval.source_type_weights,
-            document_store=persistence.document_store,
             query_rewriter=retrieval.query_rewriter,
-            graph_store=persistence.graph_store,
             chunk_refiner=retrieval.chunk_refiner,
         )
 
-        self._structured_retrieval = StructuredRetrievalService(
-            vector_store=persistence.vector_store,
-            embeddings=ingestion.embeddings,
-            lm_config=retrieval.enrich_lm_config,
-            top_k=retrieval.top_k,
-            enrich_cross_references=retrieval.cross_reference_enrichment,
-        )
+        # Structured retrieval (unchanged)
+        if persistence.vector_store and ingestion.embeddings:
+            self._structured_retrieval = StructuredRetrievalService(
+                vector_store=persistence.vector_store,
+                embeddings=ingestion.embeddings,
+                lm_config=retrieval.enrich_lm_config,
+                top_k=retrieval.top_k,
+                enrich_cross_references=retrieval.cross_reference_enrichment,
+            )
 
+        # Collection-scoped pipelines
         self._retrieval_by_collection.clear()
-        store_collections: list[str] = (
-            persistence.vector_store.collections if hasattr(persistence.vector_store, "collections") else []
-        )
-        for coll_name in store_collections:
-            if coll_name == store_collections[0]:
-                self._retrieval_by_collection[coll_name] = (
-                    self._unstructured_retrieval,
-                    self._structured_retrieval,
-                )
-                continue
+        if persistence.vector_store and hasattr(persistence.vector_store, "collections"):
+            store_collections: list[str] = persistence.vector_store.collections
+            for coll_name in store_collections:
+                if coll_name == store_collections[0]:
+                    self._retrieval_by_collection[coll_name] = (
+                        self._retrieval_service,
+                        self._structured_retrieval,
+                    )
+                    continue
 
-            scoped_store = persistence.vector_store.scoped(coll_name)  # type: ignore[attr-defined]
-            scoped_retrieval = self._build_retrieval_pipeline(scoped_store, ingestion, retrieval, persistence)
-            self._retrieval_by_collection[coll_name] = scoped_retrieval
-            logger.info("retrieval pipeline built for collection '%s'", coll_name)
+                scoped_store = persistence.vector_store.scoped(coll_name)  # type: ignore[attr-defined]
+                scoped_retrieval = self._build_retrieval_pipeline(scoped_store, ingestion, retrieval, persistence)
+                self._retrieval_by_collection[coll_name] = scoped_retrieval
+                logger.info("retrieval pipeline built for collection '%s'", coll_name)
 
+        # Generation
         if gen.lm_config:
             relevance_gate_lm_config = gen.relevance_gate_model if gen.relevance_gate_enabled else None
             self._generation_service = GenerationService(
@@ -364,31 +468,6 @@ class RagServer:
         if stale:
             logger.warning("%d sources are stale and need re-ingestion", stale)
 
-        # Tree indexing service
-        self._tree_indexing_service = None
-        if cfg.tree_indexing.enabled and persistence.metadata_store:
-            from x64rag.retrieval.modules.ingestion.tree.service import TreeIndexingService
-
-            tree_idx_registry = build_registry(cfg.tree_indexing.model) if cfg.tree_indexing.model else None
-            self._tree_indexing_service = TreeIndexingService(
-                config=cfg.tree_indexing,
-                metadata_store=persistence.metadata_store,
-                registry=tree_idx_registry,
-            )
-            logger.info("tree indexing: enabled")
-
-        # Tree search service (requires metadata store for loading tree indexes)
-        self._tree_search_service = None
-        if cfg.tree_search.enabled and persistence.metadata_store:
-            from x64rag.retrieval.modules.retrieval.tree.service import TreeSearchService
-
-            tree_search_registry = build_registry(cfg.tree_search.model) if cfg.tree_search.model else None
-            self._tree_search_service = TreeSearchService(
-                config=cfg.tree_search,
-                registry=tree_search_registry,
-            )
-            logger.info("tree search: enabled")
-
         self._initialized = True
 
         flows = self._enabled_flows()
@@ -397,10 +476,11 @@ class RagServer:
     async def shutdown(self) -> None:
         """Cleanup all store connections."""
         persistence = self._config.persistence
-        try:
-            await persistence.vector_store.shutdown()
-        except Exception:
-            logger.exception("error shutting down vector store")
+        if persistence.vector_store:
+            try:
+                await persistence.vector_store.shutdown()
+            except Exception:
+                logger.exception("error shutting down vector store")
         if persistence.metadata_store:
             try:
                 await persistence.metadata_store.shutdown()
@@ -615,11 +695,15 @@ class RagServer:
     async def embed(self, texts: list[str]) -> list[list[float]]:
         """Generate embeddings for a list of texts using the configured provider."""
         self._check_initialized()
+        if not self._config.ingestion.embeddings:
+            raise ConfigurationError("embed() requires embeddings to be configured")
         return await self._config.ingestion.embeddings.embed(texts)
 
     async def embed_single(self, text: str) -> list[float]:
         """Generate an embedding for a single text."""
         self._check_initialized()
+        if not self._config.ingestion.embeddings:
+            raise ConfigurationError("embed_single() requires embeddings to be configured")
         vectors = await self._config.ingestion.embeddings.embed([text])
         return vectors[0]
 
@@ -644,13 +728,17 @@ class RagServer:
 
     async def _on_ingestion_complete(self, knowledge_id: str | None) -> None:
         """Callback after ingestion — invalidates BM25 cache for the knowledge_id."""
-        if self._keyword_search:
-            await self._keyword_search.invalidate(knowledge_id)
+        if self._retrieval_namespace and "vector" in self._retrieval_namespace:
+            vector = self._retrieval_namespace.vector
+            if hasattr(vector, "invalidate_cache"):
+                await vector.invalidate_cache(knowledge_id)
 
     async def _on_source_removed(self, knowledge_id: str | None) -> None:
         """Callback after source removal — invalidates BM25 cache for the knowledge_id."""
-        if self._keyword_search:
-            await self._keyword_search.invalidate(knowledge_id)
+        if self._retrieval_namespace and "vector" in self._retrieval_namespace:
+            vector = self._retrieval_namespace.vector
+            if hasattr(vector, "invalidate_cache"):
+                await vector.invalidate_cache(knowledge_id)
 
     def _build_retrieval_pipeline(
         self,
@@ -659,47 +747,67 @@ class RagServer:
         retrieval: RetrievalConfig,
         persistence: PersistenceConfig,
     ) -> tuple[RetrievalService, StructuredRetrievalService | None]:
-        vs = VectorSearch(
-            vector_store=vector_store,
-            embeddings=ingestion.embeddings,
-            sparse_embeddings=ingestion.sparse_embeddings,
-            parent_expansion=retrieval.parent_expansion,
-        )
-        kw = KeywordSearch(vector_store, max_indexes=retrieval.bm25_max_indexes) if self._keyword_search else None
+        methods: list = []
+        if ingestion.embeddings:
+            methods.append(
+                VectorRetrieval(
+                    vector_store=vector_store,
+                    embeddings=ingestion.embeddings,
+                    sparse_embeddings=ingestion.sparse_embeddings,
+                    parent_expansion=retrieval.parent_expansion,
+                    bm25_enabled=retrieval.bm25_enabled and not bool(ingestion.sparse_embeddings),
+                    bm25_max_indexes=retrieval.bm25_max_indexes,
+                    weight=1.0,
+                )
+            )
+        if persistence.document_store:
+            methods.append(DocumentRetrieval(document_store=persistence.document_store, weight=0.8))
+        if persistence.graph_store:
+            methods.append(GraphRetrieval(graph_store=persistence.graph_store, weight=0.7))
+
         unstructured = RetrievalService(
-            vector_search=vs,
-            keyword_search=kw,
+            retrieval_methods=methods,
             reranking=retrieval.reranker,
             top_k=retrieval.top_k,
             source_type_weights=retrieval.source_type_weights,
-            document_store=persistence.document_store,
             query_rewriter=retrieval.query_rewriter,
-            graph_store=persistence.graph_store,
             chunk_refiner=retrieval.chunk_refiner,
         )
-        structured = StructuredRetrievalService(
-            vector_store=vector_store,
-            embeddings=ingestion.embeddings,
-            lm_config=retrieval.enrich_lm_config,
-            top_k=retrieval.top_k,
-            enrich_cross_references=retrieval.cross_reference_enrichment,
-        )
+        structured: StructuredRetrievalService | None = None
+        if ingestion.embeddings:
+            structured = StructuredRetrievalService(
+                vector_store=vector_store,
+                embeddings=ingestion.embeddings,
+                lm_config=retrieval.enrich_lm_config,
+                top_k=retrieval.top_k,
+                enrich_cross_references=retrieval.cross_reference_enrichment,
+            )
         return unstructured, structured
 
     def _build_ingestion_service(self, vector_store: BaseVectorStore) -> IngestionService:
         assert self._chunker is not None
         cfg = self._config
+        methods: list = []
+        if cfg.ingestion.embeddings:
+            methods.append(
+                VectorIngestion(
+                    vector_store=vector_store,
+                    embeddings=cfg.ingestion.embeddings,
+                    embedding_model_name=self._embedding_model_name,
+                    sparse_embeddings=cfg.ingestion.sparse_embeddings,
+                )
+            )
+        if cfg.persistence.document_store:
+            methods.append(DocumentIngestion(document_store=cfg.persistence.document_store))
+
         return IngestionService(
-            embeddings=cfg.ingestion.embeddings,
             chunker=self._chunker,
-            vector_store=vector_store,
+            ingestion_methods=methods,
             embedding_model_name=self._embedding_model_name,
             source_type_weights=cfg.retrieval.source_type_weights,
             metadata_store=cfg.persistence.metadata_store,
             on_ingestion_complete=self._on_ingestion_complete,
             vision_parser=cfg.ingestion.vision,
-            document_store=cfg.persistence.document_store,
-            sparse_embeddings=cfg.ingestion.sparse_embeddings,
             contextual_chunking=cfg.ingestion.contextual_chunking,
         )
 
@@ -788,20 +896,20 @@ class RagServer:
         """Return retrieval pipeline for *collection* (default if None)."""
         if collection and collection in self._retrieval_by_collection:
             return self._retrieval_by_collection[collection]
-        assert self._unstructured_retrieval is not None
-        return self._unstructured_retrieval, self._structured_retrieval
+        assert self._retrieval_service is not None
+        return self._retrieval_service, self._structured_retrieval
 
     def _get_ingestion(self, collection: str | None) -> IngestionService:
         """Return ingestion service for *collection*, lazily building if needed."""
         if not collection:
-            assert self._unstructured_ingestion is not None
-            return self._unstructured_ingestion
+            assert self._ingestion_service is not None
+            return self._ingestion_service
 
         if collection in self._ingestion_by_collection:
             return self._ingestion_by_collection[collection]
 
         store = self._config.persistence.vector_store
-        if not hasattr(store, "scoped"):
+        if not store or not hasattr(store, "scoped"):
             raise ConfigurationError(f"Vector store does not support multi-collection (requested: {collection!r})")
 
         scoped_store = store.scoped(collection)  # type: ignore[union-attr]
@@ -817,13 +925,13 @@ class RagServer:
             )
 
     def _enabled_flows(self) -> list[str]:
-        flows = ["unstructured"]
+        flows: list[str] = []
+        if self._retrieval_namespace:
+            flows.extend(m.name for m in self._retrieval_namespace)
         if self._structured_ingestion:
             flows.append("structured")
         if self._generation_service:
             flows.append("generation")
-        if self._tree_indexing_service:
-            flows.append("tree-indexing")
         if self._tree_search_service:
             flows.append("tree-search")
         return flows

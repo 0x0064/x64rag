@@ -39,9 +39,7 @@ class GraphRetrieval:
     ) -> list[RetrievedChunk]:
         start = time.perf_counter()
         try:
-            results = await self._store.query_graph(
-                query=query, knowledge_id=knowledge_id, max_hops=2, top_k=top_k
-            )
+            results = await self._store.query_graph(query=query, knowledge_id=knowledge_id, max_hops=2, top_k=top_k)
             chunks = self._convert(results)
             elapsed = (time.perf_counter() - start) * 1000
             logger.info("%d results in %.1fms", len(chunks), elapsed)

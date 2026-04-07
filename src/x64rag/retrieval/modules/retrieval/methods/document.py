@@ -38,9 +38,7 @@ class DocumentRetrieval:
     ) -> list[RetrievedChunk]:
         start = time.perf_counter()
         try:
-            matches = await self._store.search_content(
-                query=query, knowledge_id=knowledge_id, top_k=top_k
-            )
+            matches = await self._store.search_content(query=query, knowledge_id=knowledge_id, top_k=top_k)
             results = self._convert(matches)
             elapsed = (time.perf_counter() - start) * 1000
             logger.info("%d results in %.1fms", len(results), elapsed)

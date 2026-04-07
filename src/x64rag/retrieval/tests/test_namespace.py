@@ -18,7 +18,7 @@ def test_attribute_access():
 def test_attribute_access_missing_raises():
     ns = MethodNamespace([_method("vector")])
     with pytest.raises(AttributeError, match="No method 'graph' configured"):
-        ns.graph
+        _ = ns.graph
 
 
 def test_iteration():

@@ -17,7 +17,7 @@ logger = get_logger("knowledge")
 class KnowledgeManager:
     def __init__(
         self,
-        vector_store: BaseVectorStore,
+        vector_store: BaseVectorStore | None = None,
         metadata_store: BaseMetadataStore | None = None,
         on_source_removed: Callable[[str | None], Awaitable[None]] | None = None,
         document_store: BaseDocumentStore | None = None,
@@ -50,6 +50,8 @@ class KnowledgeManager:
         """Inspect all chunks belonging to a source."""
         if not source_id or not source_id.strip():
             raise ValueError("source_id must not be empty")
+        if not self._vector_store:
+            return []
         chunks: list[Chunk] = []
         offset = None
 
@@ -100,7 +102,9 @@ class KnowledgeManager:
             if source:
                 knowledge_id = source.knowledge_id
 
-        deleted = await self._vector_store.delete(filters={"source_id": source_id})
+        deleted = 0
+        if self._vector_store:
+            deleted = await self._vector_store.delete(filters={"source_id": source_id})
 
         if self._metadata_store:
             await self._metadata_store.delete_source(source_id)
@@ -123,6 +127,8 @@ class KnowledgeManager:
         knowledge_id: str | None = None,
     ) -> builtins.list[Source]:
         """Derive source list by scanning vector payloads."""
+        if not self._vector_store:
+            return []
         sources_map: dict[str, dict[str, Any]] = {}
         offset = None
         filters: dict[str, Any] | None = None
