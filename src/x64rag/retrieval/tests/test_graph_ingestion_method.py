@@ -72,9 +72,15 @@ async def test_ingest_skips_when_no_entities():
 
         method = GraphIngestion(graph_store=store, lm_config=lm_config)
         await method.ingest(
-            source_id="src-1", knowledge_id=None, source_type=None,
-            source_weight=1.0, title="Test", full_text="No entities here.",
-            chunks=[], tags=[], metadata={},
+            source_id="src-1",
+            knowledge_id=None,
+            source_type=None,
+            source_weight=1.0,
+            title="Test",
+            full_text="No entities here.",
+            chunks=[],
+            tags=[],
+            metadata={},
         )
 
     store.add_entities.assert_not_called()
@@ -93,9 +99,15 @@ async def test_ingest_error_does_not_raise():
 
         method = GraphIngestion(graph_store=store, lm_config=lm_config)
         await method.ingest(
-            source_id="src-1", knowledge_id=None, source_type=None,
-            source_weight=1.0, title="Test", full_text="Some text.",
-            chunks=[], tags=[], metadata={},
+            source_id="src-1",
+            knowledge_id=None,
+            source_type=None,
+            source_weight=1.0,
+            title="Test",
+            full_text="Some text.",
+            chunks=[],
+            tags=[],
+            metadata={},
         )
 
 
@@ -103,9 +115,15 @@ async def test_ingest_skips_without_lm_config():
     store = AsyncMock()
     method = GraphIngestion(graph_store=store, lm_config=None)
     await method.ingest(
-        source_id="src-1", knowledge_id=None, source_type=None,
-        source_weight=1.0, title="Test", full_text="Text.",
-        chunks=[], tags=[], metadata={},
+        source_id="src-1",
+        knowledge_id=None,
+        source_type=None,
+        source_weight=1.0,
+        title="Test",
+        full_text="Text.",
+        chunks=[],
+        tags=[],
+        metadata={},
     )
     store.add_entities.assert_not_called()
 

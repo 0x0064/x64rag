@@ -72,9 +72,7 @@ async def main():
             print(f"  [{chunk.score:.2f}] {chunk.content[:80]}...")
 
         print("\n--- Document search ---")
-        doc_chunks = await rag.retrieval.document.search(
-            "RV-2201", top_k=5, knowledge_id="equipment"
-        )
+        doc_chunks = await rag.retrieval.document.search("RV-2201", top_k=5, knowledge_id="equipment")
         for chunk in doc_chunks:
             print(f"  [{chunk.score:.2f}] {chunk.content[:80]}...")
 
@@ -82,9 +80,7 @@ async def main():
         print("\n--- Fallback: vector first, document if insufficient ---")
         chunks = await rag.retrieval.vector.search("reed valve", top_k=10)
         if len(chunks) < 3 and "document" in rag.retrieval:
-            extra = await rag.retrieval.document.search(
-                "reed valve", top_k=5, knowledge_id="equipment"
-            )
+            extra = await rag.retrieval.document.search("reed valve", top_k=5, knowledge_id="equipment")
             chunks.extend(extra)
             print(f"  Added {len(extra)} document results as fallback")
         print(f"  Total: {len(chunks)} chunks")
