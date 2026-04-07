@@ -44,10 +44,11 @@ src/x64rag/
 │   └── cli.py           # ConfigError, CONFIG_DIR, load_dotenv
 ├── retrieval/
 │   ├── common/           # Re-exports from x64rag.common + retrieval-specific (models, formatting, hashing, page_range)
-│   ├── server.py         # RagServer — main entry point, wires all modules
+│   ├── server.py         # RagServer — main entry point, dynamic pipeline assembly
 │   ├── modules/
-│   │   ├── ingestion/    # chunk/ (chunker, parsers, batch), analyze/ (structured 3-phase), embeddings/, vision/, tree/ (TOC detection, structure building)
-│   │   ├── retrieval/    # search/ (vector, keyword/BM25, reranking/, rewriting/), refinement/, enrich/, judging, tree/ (BAML tool-use loop)
+│   │   ├── namespace.py  # MethodNamespace[T] — attribute access + iteration for pipeline methods
+│   │   ├── ingestion/    # base.py (BaseIngestionMethod protocol), methods/ (vector, document, graph, tree), chunk/ (chunker, parsers, batch), analyze/ (analyzed 3-phase), embeddings/, vision/, tree/
+│   │   ├── retrieval/    # base.py (BaseRetrievalMethod protocol), methods/ (vector, document, graph), search/ (service, fusion, reranking/, rewriting/), refinement/, enrich/, judging, tree/
 │   │   ├── generation/   # service, step, grounding, confidence
 │   │   ├── knowledge/    # manager (CRUD), migration
 │   │   └── evaluation/   # metrics (ExactMatch, F1, LLMJudge), retrieval_metrics
@@ -80,16 +81,25 @@ src/x64rag/
 The retrieval pipeline in `RagServer` runs in this order:
 
 1. **Query rewriting** (pre-retrieval, optional) — HyDE, multi-query, or step-back. Expands 1 query into multiple variants via an LLM call. Configured via `RetrievalConfig.query_rewriter`.
-2. **Multi-path search** (per query) — up to 6 concurrent paths, results merged via reciprocal rank fusion:
-   - **Vector** — Dense similarity (always on) + SPLADE sparse vectors (hybrid search in Qdrant when `sparse_embeddings` configured)
-   - **Keyword/BM25** — In-memory BM25 via `rank-bm25` (`bm25_enabled=True`). Auto-disabled when sparse embeddings are configured since SPLADE supersedes it.
-   - **Document** — Full-text + substring search (requires document store)
-   - **Graph** — Entity lookup + N-hop traversal (requires graph store)
+2. **Multi-path search** (per query) — pluggable retrieval methods run concurrently, results merged via reciprocal rank fusion with per-method weights:
+   - **VectorRetrieval** — Dense similarity + SPLADE hybrid (if `sparse_embeddings`) + BM25 (if `bm25_enabled`), fused internally via RRF. Each method has `weight` and optional `top_k` override.
+   - **DocumentRetrieval** — Full-text + substring search (requires document store)
+   - **GraphRetrieval** — Entity lookup + N-hop traversal (requires graph store)
    - **Enrich** — Structured retrieval with field filtering (requires metadata store)
    - **Tree** — LLM reasoning over hierarchical document structure (requires metadata store + `TreeSearchConfig.enabled`)
 3. **Reranking** (optional) — Cross-encoder reranking against original query (Cohere, Voyage)
 4. **Chunk refinement** (optional) — Extractive (context window) or abstractive (LLM summarization) refinement
 5. **Generation** (for `query()` only) — Grounding gate → LLM relevance gate → optional clarification → LLM generation
+
+### Modular Pipeline
+
+Retrieval and ingestion are protocol-based plugin architectures. No mandatory vector DB or embeddings — at least one retrieval path (vector, document, or graph) must be configured.
+
+- **`BaseRetrievalMethod`** / **`BaseIngestionMethod`** — Protocol interfaces in `modules/retrieval/base.py` and `modules/ingestion/base.py`. Any conforming class works.
+- **Method classes** — `VectorRetrieval`, `DocumentRetrieval`, `GraphRetrieval` (retrieval); `VectorIngestion`, `DocumentIngestion`, `GraphIngestion`, `TreeIngestion` (ingestion). Each is self-contained with error isolation and timing logs.
+- **`MethodNamespace[T]`** — Generic container exposing methods as attributes (`rag.retrieval.vector`) and supporting iteration (`for m in rag.retrieval`).
+- **Dynamic assembly** — `RagServer.initialize()` builds method lists from config, validates cross-config constraints via `_validate_config()`, assembles `RetrievalService` and `IngestionService` with method list dispatch.
+- **`AnalyzedIngestionService`** — 3-phase LLM pipeline (analyze → synthesize → ingest) for vision-analyzed documents. Uses `graph_store` directly for pre-extracted entities, delegates document storage to method list.
 
 ### Error Hierarchy
 
@@ -113,11 +123,12 @@ All LLM calls go through BAML for structured output parsing, retry/fallback poli
 
 ## Key Patterns
 
-- **Protocol-based abstraction** — No inheritance; `Protocol` classes define interfaces (`BaseEmbeddings`, `BaseVectorStore`, `BaseReranking`, etc.). Any conforming object works.
+- **Protocol-based abstraction** — No inheritance; `Protocol` classes define interfaces (`BaseEmbeddings`, `BaseVectorStore`, `BaseReranking`, `BaseRetrievalMethod`, `BaseIngestionMethod`, etc.). Any conforming object works.
+- **Modular pipeline** — Retrieval and ingestion methods are pluggable. Services receive `list[BaseRetrievalMethod]` / `list[BaseIngestionMethod]` and dispatch generically. Methods carry `weight` and `top_k` configuration. Per-method error isolation (catch, log, continue).
 - **Async-first** — All I/O is async. Services use `async def`, stores use asyncpg/aiosqlite.
 - **Service pattern** — Each module has a `Service` class with dependencies injected via `__init__`.
 - **Shared common, SDK-specific re-exports** — SDK `common/` modules are thin re-exports from `x64rag.common`. Retrieval-specific utilities (models, formatting, hashing, page_range) stay in retrieval's own `common/`.
-- **Config dataclasses** — Pydantic V2 or plain dataclasses with `__post_init__` validation.
+- **Config dataclasses** — Pydantic V2 or plain dataclasses with `__post_init__` validation. `PersistenceConfig.vector_store` and `IngestionConfig.embeddings` are optional — at least one retrieval path must be configured.
 
 ## Linting & Style
 
@@ -130,7 +141,7 @@ All LLM calls go through BAML for structured output parsing, retry/fallback poli
 - pytest with `asyncio_mode = "auto"` — no `@pytest.mark.asyncio` needed
 - Tests use `AsyncMock` and `SimpleNamespace` for lightweight mocking
 - Tests in `tests/` subdirectories within each SDK + inline `test_*.py` in some modules
-- 487 tests total across both SDKs
+- 534 tests total across both SDKs
 
 ## Environment Variables
 
