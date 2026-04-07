@@ -27,8 +27,6 @@ from x64rag.retrieval.modules.ingestion.analyze.pdf_splitter import split_pdf_to
 from x64rag.retrieval.modules.ingestion.embeddings.base import BaseEmbeddings
 from x64rag.retrieval.modules.ingestion.embeddings.utils import embed_batched
 from x64rag.retrieval.modules.ingestion.vision.base import BaseVision
-from x64rag.retrieval.stores.document.base import BaseDocumentStore
-from x64rag.retrieval.stores.graph.base import BaseGraphStore
 from x64rag.retrieval.stores.graph.mapper import cross_refs_to_graph_relations, page_entities_to_graph
 from x64rag.retrieval.stores.metadata.base import BaseMetadataStore
 from x64rag.retrieval.stores.vector.base import BaseVectorStore
@@ -38,7 +36,7 @@ logger = get_logger("analyze/ingestion")
 STRUCTURED_EXTENSIONS = {".pdf", ".xml", ".l5x"}
 
 
-class StructuredIngestionService:
+class AnalyzedIngestionService:
     def __init__(
         self,
         embeddings: BaseEmbeddings,
@@ -50,8 +48,7 @@ class StructuredIngestionService:
         source_type_weights: dict[str, float] | None = None,
         on_ingestion_complete: Callable[[str | None], Awaitable[None]] | None = None,
         lm_config: LanguageModelConfig | None = None,
-        document_store: BaseDocumentStore | None = None,
-        graph_store: BaseGraphStore | None = None,
+        ingestion_methods: list | None = None,
     ) -> None:
         self._embeddings = embeddings
         self._vector_store = vector_store
@@ -62,8 +59,7 @@ class StructuredIngestionService:
         self._source_type_weights = source_type_weights or {}
         self._on_ingestion_complete = on_ingestion_complete
         self._registry: ClientRegistry | None = build_registry(lm_config) if lm_config else None
-        self._document_store = document_store
-        self._graph_store = graph_store
+        self._ingestion_methods = ingestion_methods or []
 
     async def analyze(
         self,
@@ -95,18 +91,29 @@ class StructuredIngestionService:
         source_id = str(uuid4())
         file_hash_value = compute_file_hash(file_path)
 
-        if self._document_store and page_analyses:
-            full_text = "\n\n".join(
-                f"[Page {pa.page_number}] ({pa.page_type})\n{pa.description}" for pa in page_analyses
-            )
-            title = (metadata or {}).get("name", file_path.name)
-            await self._document_store.store_content(
-                source_id=source_id,
-                knowledge_id=knowledge_id,
-                source_type=source_type,
-                title=title,
-                content=full_text,
-            )
+        # Delegate document storage to ingestion methods
+        if page_analyses:
+            doc_methods = [m for m in self._ingestion_methods if m.name == "document"]
+            if doc_methods:
+                full_text = "\n\n".join(
+                    f"[Page {pa.page_number}] ({pa.page_type})\n{pa.description}" for pa in page_analyses
+                )
+                title = (metadata or {}).get("name", file_path.name)
+                for method in doc_methods:
+                    try:
+                        await method.ingest(
+                            source_id=source_id,
+                            knowledge_id=knowledge_id,
+                            source_type=source_type,
+                            source_weight=self._source_type_weights.get(source_type, 1.0) if source_type else 1.0,
+                            title=title,
+                            full_text=full_text,
+                            chunks=[],
+                            tags=[],
+                            metadata=metadata or {},
+                        )
+                    except Exception as exc:
+                        logger.warning("[analyze/ingestion/analyze] document method failed: %s", exc)
 
         source = Source(
             source_id=source_id,
@@ -214,26 +221,47 @@ class StructuredIngestionService:
 
         await self._vector_store.upsert(points)
 
-        if self._graph_store:
-            all_entities = []
-            for pa in page_analyses:
-                all_entities.extend(page_entities_to_graph(pa, source.source_id))
-            relations = cross_refs_to_graph_relations(synthesis, page_analyses, source.knowledge_id)
-
-            await self._graph_store.add_entities(
-                source_id=source.source_id,
-                knowledge_id=source.knowledge_id,
-                entities=all_entities,
-            )
-            await self._graph_store.add_relations(
-                source_id=source.source_id,
-                relations=relations,
-            )
-            logger.info(
-                "[analyze/ingestion/ingest] graph: %d entities, %d relations",
-                len(all_entities),
-                len(relations),
-            )
+        # Delegate to ingestion methods (graph, document, etc.)
+        full_text = "\n\n".join(texts)
+        for method in self._ingestion_methods:
+            try:
+                if method.name == "graph" and hasattr(method, "_store"):
+                    # Graph already has entities from analysis — use mapper directly
+                    # (skip LLM extraction, we already have entities from phase 1)
+                    all_entities = []
+                    for pa in page_analyses:
+                        all_entities.extend(page_entities_to_graph(pa, source.source_id))
+                    relations = cross_refs_to_graph_relations(synthesis, page_analyses, source.knowledge_id)
+                    if all_entities:
+                        await method._store.add_entities(
+                            source_id=source.source_id,
+                            knowledge_id=source.knowledge_id,
+                            entities=all_entities,
+                        )
+                    if relations:
+                        await method._store.add_relations(
+                            source_id=source.source_id,
+                            relations=relations,
+                        )
+                    logger.info(
+                        "[analyze/ingestion/ingest] graph: %d entities, %d relations",
+                        len(all_entities),
+                        len(relations),
+                    )
+                else:
+                    await method.ingest(
+                        source_id=source.source_id,
+                        knowledge_id=source.knowledge_id,
+                        source_type=source.source_type,
+                        source_weight=source.source_weight,
+                        title=source.metadata.get("file_name", ""),
+                        full_text=full_text,
+                        chunks=[],
+                        tags=[],
+                        metadata=source.metadata,
+                    )
+            except Exception as exc:
+                logger.warning("[analyze/ingestion/ingest] method '%s' failed: %s", method.name, exc)
 
         await self._metadata_store.update_source(
             source_id,

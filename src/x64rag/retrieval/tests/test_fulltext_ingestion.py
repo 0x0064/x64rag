@@ -77,20 +77,21 @@ async def test_ingest_without_methods(tmp_path):
     assert source is not None
 
 
-async def test_structured_ingestion_has_document_store():
-    """StructuredIngestionService stores document_store reference."""
-    from x64rag.retrieval.modules.ingestion.analyze.service import StructuredIngestionService
+async def test_structured_ingestion_has_document_method():
+    """AnalyzedIngestionService stores document method in ingestion_methods."""
+    from x64rag.retrieval.modules.ingestion.analyze.service import AnalyzedIngestionService
 
-    doc_store = AsyncMock()
+    doc_method = SimpleNamespace(name="document", ingest=AsyncMock(), delete=AsyncMock())
     metadata_store = AsyncMock()
     embeddings = AsyncMock()
     embeddings.model = "test-model"
 
-    service = StructuredIngestionService(
+    service = AnalyzedIngestionService(
         embeddings=embeddings,
         vector_store=AsyncMock(),
         metadata_store=metadata_store,
         embedding_model_name="test:model",
-        document_store=doc_store,
+        ingestion_methods=[doc_method],
     )
-    assert service._document_store is doc_store
+    assert doc_method in service._ingestion_methods
+    assert any(m.name == "document" for m in service._ingestion_methods)

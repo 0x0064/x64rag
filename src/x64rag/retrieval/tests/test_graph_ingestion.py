@@ -1,9 +1,15 @@
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
 from x64rag.retrieval.common.models import Source
-from x64rag.retrieval.modules.ingestion.analyze.service import StructuredIngestionService
+from x64rag.retrieval.modules.ingestion.analyze.service import AnalyzedIngestionService
+
+
+def _make_graph_method(store=None):
+    """Create a mock graph ingestion method with a _store attribute."""
+    if store is None:
+        store = AsyncMock()
+    return SimpleNamespace(name="graph", _store=store, ingest=AsyncMock(), delete=AsyncMock())
 
 
 def _make_service(graph_store=None):
@@ -17,12 +23,16 @@ def _make_service(graph_store=None):
 
     metadata_store = AsyncMock()
 
-    return StructuredIngestionService(
+    methods = []
+    if graph_store is not None:
+        methods.append(_make_graph_method(store=graph_store))
+
+    return AnalyzedIngestionService(
         embeddings=embeddings,
         vector_store=vector_store,
         metadata_store=metadata_store,
         embedding_model_name="test:test-model",
-        graph_store=graph_store,
+        ingestion_methods=methods,
     )
 
 
@@ -127,7 +137,8 @@ async def test_ingest_without_graph_store():
     service._vector_store.upsert.assert_called_once()
 
 
-async def test_ingest_graph_store_failure_raises():
+async def test_ingest_graph_store_failure_warns():
+    """Graph method failure is caught and logged as a warning, not raised."""
     graph_store = AsyncMock()
     graph_store.add_entities = AsyncMock(side_effect=RuntimeError("Neo4j connection failed"))
 
@@ -136,5 +147,7 @@ async def test_ingest_graph_store_failure_raises():
     service._metadata_store.get_source = AsyncMock(return_value=source)
     service._metadata_store.update_source = AsyncMock()
 
-    with pytest.raises(RuntimeError, match="Neo4j connection failed"):
-        await service.ingest(source.source_id)
+    # Should not raise — method failures are caught and logged
+    await service.ingest(source.source_id)
+    # Vector upsert should still have succeeded
+    service._vector_store.upsert.assert_called_once()
