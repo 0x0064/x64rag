@@ -10,6 +10,7 @@ For setup, environment variables, and observability see the [main README](../../
 from x64rag.retrieval import (
     RagServer, RagServerConfig,
     PersistenceConfig, IngestionConfig, RetrievalConfig, GenerationConfig,
+    TreeIndexingConfig, TreeSearchConfig,
     QdrantVectorStore, SQLAlchemyMetadataStore,
     PostgresDocumentStore, Neo4jGraphStore,
     OpenAIEmbeddings, FastEmbedSparseEmbeddings, AnthropicVision,
@@ -94,9 +95,12 @@ async with RagServer(config) as rag:
 
     # Page range and resume support
     source = await rag.ingest("large.pdf", knowledge_id="helios", page_range="1-50")
+
+    # Tree indexing for structured documents (PDF only)
+    source = await rag.ingest("annual_report.pdf", knowledge_id="reports", tree_index=True)
 ```
 
-`ingest()` auto-routes by file extension. Documents (`.pdf`, `.txt`, `.md`, images) go through chunking. Technical files (`.l5x`, `.xml`) go through the analyze pipeline when a metadata store is configured.
+`ingest()` auto-routes by file extension. When `tree_index=True`, a hierarchical tree index is built alongside chunks — the SDK detects the document's table of contents, maps sections to page ranges, and generates summaries for LLM-based tree search at query time. Documents (`.pdf`, `.txt`, `.md`, images) go through chunking. Technical files (`.l5x`, `.xml`) go through the analyze pipeline when a metadata store is configured.
 
 #### Analyze pipeline
 
@@ -160,13 +164,14 @@ When enabled, rewriting runs before all search paths. The rewritten queries feed
 
 #### Search paths
 
-Up to five search paths run concurrently per query and merge results via reciprocal rank fusion:
+Up to six search paths run concurrently per query and merge results via reciprocal rank fusion:
 
 - **Vector** — Dense semantic similarity (always active). When `sparse_embeddings` is configured, SPLADE sparse vectors are stored alongside dense vectors and Qdrant runs hybrid search (dense + sparse) in a single query, combining semantic understanding with exact term matching.
 - **Keyword** — In-memory BM25 ranking via `rank-bm25` (when `bm25_enabled=True`). Builds BM25Okapi indexes per knowledge_id with LRU eviction. This is a simpler alternative to sparse embeddings — if `sparse_embeddings` is configured, BM25 is automatically disabled since SPLADE provides superior term-aware matching integrated directly into the vector store.
 - **Document** — Full-text ranked search + substring matching on original documents (requires document store).
 - **Graph** — Entity full-text lookup + N-hop relationship traversal (requires graph store).
 - **Enrich** — Structured retrieval with entity field filtering and cross-reference enrichment (requires metadata store).
+- **Tree** — LLM reasoning over hierarchical document structure (requires metadata store + `TreeSearchConfig.enabled`). The LLM navigates the document's section tree via a BAML tool-use loop, fetching pages and drilling into subtrees to find relevant content. Best for long structured documents where section-level retrieval matters.
 
 #### Post-retrieval
 
@@ -282,6 +287,7 @@ x64rag retrieval init                                    # Create config + .env 
 x64rag retrieval status                                  # Verify config and connections
 
 x64rag retrieval ingest manual.pdf -k equipment          # Ingest a file
+x64rag retrieval ingest report.pdf -k reports --tree-index  # Ingest with tree index
 x64rag retrieval ingest --text "..." -k equipment        # Ingest raw text
 x64rag retrieval retrieve "part number RV-2201"          # Retrieval only, raw chunks
 x64rag retrieval retrieve "pressure" --min-score 0.4     # Filter low-quality results
@@ -314,7 +320,7 @@ Async context manager: `async with RagServer(config) as rag:`
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `ingest(path, knowledge_id?, source_type?, metadata?, page_range?)` | `Source` | Ingest file (auto-routes by extension) |
+| `ingest(path, knowledge_id?, source_type?, metadata?, page_range?, tree_index?)` | `Source` | Ingest file (auto-routes by extension) |
 | `ingest_text(content, knowledge_id?, source_type?, metadata?)` | `Source` | Ingest raw text |
 | `analyze(path, knowledge_id?, source_type?, metadata?, page_range?)` | `Source` | Analyze pipeline phase 1 |
 | `synthesize(source_id)` | `Source` | Analyze pipeline phase 2 |
@@ -340,6 +346,8 @@ Async context manager: `async with RagServer(config) as rag:`
 | `ingestion` | `IngestionConfig` | yes | Embeddings + chunking |
 | `retrieval` | `RetrievalConfig` | no | Search tuning |
 | `generation` | `GenerationConfig` | no | LLM generation |
+| `tree_indexing` | `TreeIndexingConfig` | no | Tree index building |
+| `tree_search` | `TreeSearchConfig` | no | Tree-based search |
 
 #### `PersistenceConfig`
 
@@ -391,6 +399,27 @@ Async context manager: `async with RagServer(config) as rag:`
 | `relevance_gate_model` | `LanguageModelConfig` | `None` | LLM for relevance judgment |
 | `guiding_enabled` | `bool` | `False` | Clarification questions (requires `relevance_gate_enabled`) |
 | `step_lm_config` | `LanguageModelConfig` | `None` | LLM for step-by-step reasoning |
+
+#### `TreeIndexingConfig`
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | `bool` | `False` | Enable tree index building during ingestion |
+| `model` | `LanguageModelConfig` | `None` | LLM for TOC detection, structure extraction, summaries |
+| `toc_scan_pages` | `int` | `20` | Pages to scan for table of contents |
+| `max_pages_per_node` | `int` | `10` | Max pages before a node is split |
+| `max_tokens_per_node` | `int` | `20000` | Max tokens before a node is split |
+| `generate_summaries` | `bool` | `True` | Generate section summaries for navigation |
+| `generate_description` | `bool` | `True` | Generate one-line document description |
+
+#### `TreeSearchConfig`
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | `bool` | `False` | Enable tree-based search at query time |
+| `model` | `LanguageModelConfig` | `None` | LLM for reasoning-based tree traversal |
+| `max_steps` | `int` | `5` | Max iterations in the tool-use loop |
+| `max_context_tokens` | `int` | `50000` | Budget for accumulated page content |
 
 #### `LanguageModelConfig`
 

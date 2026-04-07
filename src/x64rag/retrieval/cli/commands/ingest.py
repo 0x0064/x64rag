@@ -14,9 +14,15 @@ from x64rag.retrieval.cli.output import OutputMode, print_error, print_success
 @click.option("--text", "text_content", default=None, help="Ingest raw text instead of a file.")
 @click.option("-k", "--knowledge-id", default=None, help="Knowledge namespace.")
 @click.option("--source-type", default=None, help="Source type label.")
+@click.option("--tree-index", is_flag=True, default=False, help="Build a tree index for structured retrieval.")
 @click.pass_context
 def ingest(
-    ctx: click.Context, file: str | None, text_content: str | None, knowledge_id: str | None, source_type: str | None
+    ctx: click.Context,
+    file: str | None,
+    text_content: str | None,
+    knowledge_id: str | None,
+    source_type: str | None,
+    tree_index: bool,
 ) -> None:
     """Ingest a file or text into the knowledge base."""
     mode: OutputMode = ctx.obj["output_mode"]
@@ -36,12 +42,12 @@ def ingest(
         raise SystemExit(1) from None
 
     if file:
-        run_async(_ingest_file(server_config, Path(file), knowledge_id, source_type, mode))
+        run_async(_ingest_file(server_config, Path(file), knowledge_id, source_type, tree_index, mode))
     else:
         run_async(_ingest_text(server_config, text_content, knowledge_id, source_type, mode))
 
 
-async def _ingest_file(server_config, file_path, knowledge_id, source_type, mode):
+async def _ingest_file(server_config, file_path, knowledge_id, source_type, tree_index, mode):
     from x64rag.retrieval.server import RagServer
 
     try:
@@ -50,6 +56,7 @@ async def _ingest_file(server_config, file_path, knowledge_id, source_type, mode
                 file_path=file_path,
                 knowledge_id=knowledge_id,
                 source_type=source_type,
+                tree_index=tree_index,
             )
             data = {
                 "source_id": source.source_id,

@@ -25,6 +25,8 @@ from x64rag.retrieval.server import (
     PersistenceConfig,
     RagServerConfig,
     RetrievalConfig,
+    TreeIndexingConfig,
+    TreeSearchConfig,
 )
 from x64rag.retrieval.stores.metadata.sqlalchemy import SQLAlchemyMetadataStore
 from x64rag.retrieval.stores.vector.qdrant import QdrantVectorStore
@@ -219,6 +221,23 @@ def _build_metadata_store(cfg: dict[str, Any]) -> SQLAlchemyMetadataStore:
     return SQLAlchemyMetadataStore(url=url)
 
 
+def _build_tree_lm(cfg: dict[str, Any], section_name: str) -> LanguageModelConfig | None:
+    """Build a LanguageModelConfig from a tree config section's provider/model."""
+    provider = cfg.get("provider")
+    if not provider:
+        return None
+    env_var = _GENERATION_KEYS.get(provider)
+    if env_var is None:
+        raise ConfigError(f"Unknown [{section_name}] provider: {provider!r}. Supported: {', '.join(_GENERATION_KEYS)}")
+    api_key = _get_api_key(env_var, provider)
+    model = cfg.get("model")
+    if not model:
+        raise ConfigError(f"[{section_name}] requires 'model' when provider is set")
+    return LanguageModelConfig(
+        client=LanguageModelClientConfig(provider=provider, model=model, api_key=api_key),
+    )
+
+
 def load_config(config_path: str | None = None) -> RagServerConfig:
     """Load TOML config + .env, build RagServerConfig."""
     path = Path(config_path) if config_path else CONFIG_FILE
@@ -269,6 +288,33 @@ def load_config(config_path: str | None = None) -> RagServerConfig:
     generation_cfg = toml.get("generation")
     generation = _build_generation_config(generation_cfg) if generation_cfg else GenerationConfig()
 
+    tree_indexing_cfg = toml.get("tree_indexing", {})
+    tree_indexing = (
+        TreeIndexingConfig(
+            enabled=tree_indexing_cfg.get("enabled", False),
+            model=_build_tree_lm(tree_indexing_cfg, "tree_indexing"),
+            toc_scan_pages=tree_indexing_cfg.get("toc_scan_pages", 20),
+            max_pages_per_node=tree_indexing_cfg.get("max_pages_per_node", 10),
+            max_tokens_per_node=tree_indexing_cfg.get("max_tokens_per_node", 20_000),
+            generate_summaries=tree_indexing_cfg.get("generate_summaries", True),
+            generate_description=tree_indexing_cfg.get("generate_description", True),
+        )
+        if tree_indexing_cfg
+        else TreeIndexingConfig()
+    )
+
+    tree_search_cfg = toml.get("tree_search", {})
+    tree_search = (
+        TreeSearchConfig(
+            enabled=tree_search_cfg.get("enabled", False),
+            model=_build_tree_lm(tree_search_cfg, "tree_search"),
+            max_steps=tree_search_cfg.get("max_steps", 5),
+            max_context_tokens=tree_search_cfg.get("max_context_tokens", 50_000),
+        )
+        if tree_search_cfg
+        else TreeSearchConfig()
+    )
+
     return RagServerConfig(
         persistence=PersistenceConfig(
             vector_store=vector_store,
@@ -277,4 +323,6 @@ def load_config(config_path: str | None = None) -> RagServerConfig:
         ingestion=ingestion,
         retrieval=retrieval,
         generation=generation,
+        tree_indexing=tree_indexing,
+        tree_search=tree_search,
     )
