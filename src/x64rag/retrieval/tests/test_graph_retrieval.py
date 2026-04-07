@@ -1,25 +1,31 @@
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 from x64rag.retrieval.common.models import RetrievedChunk
+from x64rag.retrieval.modules.retrieval.methods.graph import GraphRetrieval
 from x64rag.retrieval.modules.retrieval.search.service import RetrievalService
-from x64rag.retrieval.modules.retrieval.search.vector import VectorSearch
 from x64rag.retrieval.stores.graph.models import GraphEntity, GraphPath, GraphResult
 
 
-def _make_service(graph_store=None, document_store=None):
-    vector_search = AsyncMock(spec=VectorSearch)
-    vector_search.search = AsyncMock(
-        return_value=[
-            RetrievedChunk(chunk_id="chunk-1", source_id="src-1", content="Vector result", score=0.8),
-        ]
+def _make_service(graph_method=None, document_method=None):
+    mock_vector = SimpleNamespace(
+        name="vector",
+        weight=1.0,
+        search=AsyncMock(
+            return_value=[
+                RetrievedChunk(chunk_id="chunk-1", source_id="src-1", content="Vector result", score=0.8),
+            ]
+        ),
     )
+    methods = [mock_vector]
+    if document_method is not None:
+        methods.append(document_method)
+    if graph_method is not None:
+        methods.append(graph_method)
     return RetrievalService(
-        vector_search=vector_search,
-        keyword_search=None,
+        retrieval_methods=methods,
         reranking=None,
         top_k=5,
-        document_store=document_store,
-        graph_store=graph_store,
     )
 
 
@@ -48,21 +54,31 @@ def _make_graph_results():
     ]
 
 
-async def test_retrieve_with_graph_store():
-    graph_store = AsyncMock()
-    graph_store.query_graph = AsyncMock(return_value=_make_graph_results())
+def _make_graph_method(graph_results):
+    """Build a mock graph retrieval method that returns pre-converted chunks."""
+    chunks = GraphRetrieval._convert(graph_results)
+    return SimpleNamespace(
+        name="graph",
+        weight=1.0,
+        search=AsyncMock(return_value=chunks),
+    )
 
-    service = _make_service(graph_store=graph_store)
+
+async def test_retrieve_with_graph_store():
+    graph_results = _make_graph_results()
+    mock_graph = _make_graph_method(graph_results)
+
+    service = _make_service(graph_method=mock_graph)
     results = await service.retrieve(query="what connects to Motor M1?", knowledge_id="kb-1")
 
-    graph_store.query_graph.assert_called_once()
+    mock_graph.search.assert_called_once()
     assert len(results) >= 2
     graph_chunks = [r for r in results if r.chunk_id.startswith("graph:")]
     assert len(graph_chunks) == 1
 
 
 async def test_retrieve_without_graph_store():
-    service = _make_service(graph_store=None)
+    service = _make_service(graph_method=None)
     results = await service.retrieve(query="test query", knowledge_id="kb-1")
 
     assert len(results) == 1
@@ -71,7 +87,7 @@ async def test_retrieve_without_graph_store():
 
 async def test_graph_results_to_chunks_basic():
     results = _make_graph_results()
-    chunks = RetrievalService._graph_results_to_chunks(results)
+    chunks = GraphRetrieval._convert(results)
 
     assert len(chunks) == 1
     chunk = chunks[0]
@@ -96,7 +112,7 @@ async def test_graph_results_to_chunks_no_value():
             relevance_score=0.5,
         ),
     ]
-    chunks = RetrievalService._graph_results_to_chunks(results)
+    chunks = GraphRetrieval._convert(results)
 
     assert len(chunks) == 1
     assert "Specifications:" not in chunks[0].content
@@ -104,15 +120,18 @@ async def test_graph_results_to_chunks_no_value():
 
 
 async def test_graph_results_to_chunks_empty():
-    chunks = RetrievalService._graph_results_to_chunks([])
+    chunks = GraphRetrieval._convert([])
     assert chunks == []
 
 
 async def test_graph_store_empty_result_no_fusion():
-    graph_store = AsyncMock()
-    graph_store.query_graph = AsyncMock(return_value=[])
+    mock_graph = SimpleNamespace(
+        name="graph",
+        weight=1.0,
+        search=AsyncMock(return_value=[]),
+    )
 
-    service = _make_service(graph_store=graph_store)
+    service = _make_service(graph_method=mock_graph)
     results = await service.retrieve(query="test query", knowledge_id="kb-1")
 
     assert len(results) == 1
@@ -120,19 +139,26 @@ async def test_graph_store_empty_result_no_fusion():
 
 
 async def test_graph_and_document_store_together():
-    from x64rag.retrieval.common.models import ContentMatch
+    graph_results = _make_graph_results()
+    mock_graph = _make_graph_method(graph_results)
 
-    graph_store = AsyncMock()
-    graph_store.query_graph = AsyncMock(return_value=_make_graph_results())
-
-    document_store = AsyncMock()
-    document_store.search_content = AsyncMock(
-        return_value=[
-            ContentMatch(source_id="src-3", title="Doc", excerpt="excerpt", score=0.7, match_type="fulltext"),
-        ]
+    mock_document = SimpleNamespace(
+        name="document",
+        weight=1.0,
+        search=AsyncMock(
+            return_value=[
+                RetrievedChunk(
+                    chunk_id="fulltext:src-3",
+                    source_id="src-3",
+                    content="excerpt",
+                    score=0.7,
+                    source_metadata={"title": "Doc", "match_type": "fulltext"},
+                ),
+            ]
+        ),
     )
 
-    service = _make_service(graph_store=graph_store, document_store=document_store)
+    service = _make_service(graph_method=mock_graph, document_method=mock_document)
     results = await service.retrieve(query="Motor M1", knowledge_id="kb-1")
 
     assert len(results) == 3

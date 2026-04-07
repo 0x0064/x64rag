@@ -1,7 +1,7 @@
 from unittest.mock import AsyncMock
 
 from x64rag.retrieval.common.models import SparseVector, VectorResult
-from x64rag.retrieval.modules.retrieval.search.vector import VectorSearch
+from x64rag.retrieval.modules.retrieval.methods.vector import VectorRetrieval
 
 
 async def test_hybrid_search_called_when_sparse_available():
@@ -27,11 +27,12 @@ async def test_hybrid_search_called_when_sparse_available():
     sparse_embeddings = AsyncMock()
     sparse_embeddings.embed_sparse_query = AsyncMock(return_value=SparseVector(indices=[1], values=[0.8]))
 
-    search = VectorSearch(
+    search = VectorRetrieval(
         vector_store=vector_store,
         embeddings=embeddings,
         sparse_embeddings=sparse_embeddings,
         parent_expansion=False,
+        weight=1.0,
     )
     results = await search.search(query="test", top_k=5)
 
@@ -68,10 +69,11 @@ async def test_parent_expansion():
     embeddings = AsyncMock()
     embeddings.embed = AsyncMock(return_value=[[0.1, 0.2]])
 
-    search = VectorSearch(
+    search = VectorRetrieval(
         vector_store=vector_store,
         embeddings=embeddings,
         parent_expansion=True,
+        weight=1.0,
     )
     results = await search.search(query="test", top_k=5)
 
@@ -100,11 +102,12 @@ async def test_dense_only_fallback():
     embeddings = AsyncMock()
     embeddings.embed = AsyncMock(return_value=[[0.1, 0.2]])
 
-    search = VectorSearch(
+    search = VectorRetrieval(
         vector_store=vector_store,
         embeddings=embeddings,
         sparse_embeddings=None,
         parent_expansion=False,
+        weight=1.0,
     )
     results = await search.search(query="test", top_k=5)
 
@@ -157,10 +160,11 @@ async def test_parent_deduplication():
     embeddings = AsyncMock()
     embeddings.embed = AsyncMock(return_value=[[0.1, 0.2]])
 
-    search = VectorSearch(
+    search = VectorRetrieval(
         vector_store=vector_store,
         embeddings=embeddings,
         parent_expansion=True,
+        weight=1.0,
     )
     results = await search.search(query="test", top_k=5)
 

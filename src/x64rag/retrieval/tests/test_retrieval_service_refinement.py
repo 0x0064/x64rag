@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 from x64rag.retrieval.common.models import RetrievedChunk
@@ -9,10 +10,13 @@ def _chunk(chunk_id: str, score: float = 0.9) -> RetrievedChunk:
 
 
 def _make_service(chunk_refiner=None, reranking=None):
-    vector_search = AsyncMock()
-    vector_search.search = AsyncMock(return_value=[_chunk("v1", 0.9), _chunk("v2", 0.8)])
+    mock_vector = SimpleNamespace(
+        name="vector",
+        weight=1.0,
+        search=AsyncMock(return_value=[_chunk("v1", 0.9), _chunk("v2", 0.8)]),
+    )
     return RetrievalService(
-        vector_search=vector_search,
+        retrieval_methods=[mock_vector],
         top_k=5,
         chunk_refiner=chunk_refiner,
         reranking=reranking,
@@ -63,10 +67,13 @@ class TestChunkRefinerWiring:
     async def test_refiner_skipped_on_empty_results(self):
         refiner = AsyncMock()
         refiner.refine = AsyncMock()
-        vector_search = AsyncMock()
-        vector_search.search = AsyncMock(return_value=[])
+        mock_vector = SimpleNamespace(
+            name="vector",
+            weight=1.0,
+            search=AsyncMock(return_value=[]),
+        )
 
-        service = RetrievalService(vector_search=vector_search, top_k=5, chunk_refiner=refiner)
+        service = RetrievalService(retrieval_methods=[mock_vector], top_k=5, chunk_refiner=refiner)
         results = await service.retrieve("test query")
 
         refiner.refine.assert_not_awaited()

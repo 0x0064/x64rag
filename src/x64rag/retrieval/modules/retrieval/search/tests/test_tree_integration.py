@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 from x64rag.retrieval.common.models import RetrievedChunk
@@ -9,9 +10,12 @@ def _chunk(chunk_id: str, score: float = 0.9) -> RetrievedChunk:
 
 
 def _make_service() -> RetrievalService:
-    vector_search = AsyncMock()
-    vector_search.search = AsyncMock(return_value=[_chunk("v1", 0.9), _chunk("v2", 0.8)])
-    return RetrievalService(vector_search=vector_search, top_k=5)
+    mock_vector = SimpleNamespace(
+        name="vector",
+        weight=1.0,
+        search=AsyncMock(return_value=[_chunk("v1", 0.9), _chunk("v2", 0.8)]),
+    )
+    return RetrievalService(retrieval_methods=[mock_vector], top_k=5)
 
 
 async def test_retrieve_includes_tree_chunks():

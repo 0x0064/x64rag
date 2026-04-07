@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from baml_py import errors as baml_errors
@@ -7,7 +8,6 @@ from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewrite
 from x64rag.retrieval.modules.retrieval.search.rewriting.multi_query import MultiQueryRewriter
 from x64rag.retrieval.modules.retrieval.search.rewriting.step_back import StepBackRewriter
 from x64rag.retrieval.modules.retrieval.search.service import RetrievalService
-from x64rag.retrieval.modules.retrieval.search.vector import VectorSearch
 from x64rag.retrieval.server import RetrievalConfig
 
 
@@ -213,20 +213,21 @@ async def test_step_back_returns_empty_on_exception():
     assert result == []
 
 
-def _make_retrieval_service(query_rewriter=None, document_store=None):
+def _make_retrieval_service(query_rewriter=None):
     """Helper to build a RetrievalService with mocked search backends."""
-    vector_search = AsyncMock(spec=VectorSearch)
-    vector_search.search = AsyncMock(
-        return_value=[
-            RetrievedChunk(chunk_id="chunk-1", source_id="src-1", content="Vector result", score=0.8),
-        ]
+    mock_vector = SimpleNamespace(
+        name="vector",
+        weight=1.0,
+        search=AsyncMock(
+            return_value=[
+                RetrievedChunk(chunk_id="chunk-1", source_id="src-1", content="Vector result", score=0.8),
+            ]
+        ),
     )
     return RetrievalService(
-        vector_search=vector_search,
-        keyword_search=None,
+        retrieval_methods=[mock_vector],
         reranking=None,
         top_k=5,
-        document_store=document_store,
         query_rewriter=query_rewriter,
     )
 
@@ -244,25 +245,27 @@ async def test_retrieve_with_rewriter_searches_original_and_rewritten():
     mock_rewriter = AsyncMock()
     mock_rewriter.rewrite = AsyncMock(return_value=["rewritten query 1", "rewritten query 2"])
 
-    vector_search = AsyncMock(spec=VectorSearch)
-    vector_search.search = AsyncMock(
-        side_effect=[
-            [RetrievedChunk(chunk_id="orig-1", source_id="s1", content="Original result", score=0.9)],
-            [RetrievedChunk(chunk_id="rw-1", source_id="s2", content="Rewritten result 1", score=0.85)],
-            [RetrievedChunk(chunk_id="rw-2", source_id="s3", content="Rewritten result 2", score=0.7)],
-        ]
+    mock_vector = SimpleNamespace(
+        name="vector",
+        weight=1.0,
+        search=AsyncMock(
+            side_effect=[
+                [RetrievedChunk(chunk_id="orig-1", source_id="s1", content="Original result", score=0.9)],
+                [RetrievedChunk(chunk_id="rw-1", source_id="s2", content="Rewritten result 1", score=0.85)],
+                [RetrievedChunk(chunk_id="rw-2", source_id="s3", content="Rewritten result 2", score=0.7)],
+            ]
+        ),
     )
 
     service = RetrievalService(
-        vector_search=vector_search,
-        keyword_search=None,
+        retrieval_methods=[mock_vector],
         reranking=None,
         top_k=5,
         query_rewriter=mock_rewriter,
     )
     results = await service.retrieve(query="test query", knowledge_id="kb-1")
 
-    assert vector_search.search.call_count == 3
+    assert mock_vector.search.call_count == 3
     chunk_ids = {r.chunk_id for r in results}
     assert "orig-1" in chunk_ids
     assert "rw-1" in chunk_ids
@@ -276,17 +279,19 @@ async def test_retrieve_with_rewriter_deduplicates_via_fusion():
 
     shared_chunk = RetrievedChunk(chunk_id="shared-1", source_id="s1", content="Shared", score=0.8)
 
-    vector_search = AsyncMock(spec=VectorSearch)
-    vector_search.search = AsyncMock(
-        side_effect=[
-            [shared_chunk],
-            [shared_chunk],
-        ]
+    mock_vector = SimpleNamespace(
+        name="vector",
+        weight=1.0,
+        search=AsyncMock(
+            side_effect=[
+                [shared_chunk],
+                [shared_chunk],
+            ]
+        ),
     )
 
     service = RetrievalService(
-        vector_search=vector_search,
-        keyword_search=None,
+        retrieval_methods=[mock_vector],
         reranking=None,
         top_k=5,
         query_rewriter=mock_rewriter,
@@ -319,16 +324,18 @@ async def test_reranker_receives_original_query_not_rewritten():
         return_value=[RetrievedChunk(chunk_id="c1", source_id="s1", content="Result", score=0.95)]
     )
 
-    vector_search = AsyncMock(spec=VectorSearch)
-    vector_search.search = AsyncMock(
-        return_value=[
-            RetrievedChunk(chunk_id="c1", source_id="s1", content="Result", score=0.8),
-        ]
+    mock_vector = SimpleNamespace(
+        name="vector",
+        weight=1.0,
+        search=AsyncMock(
+            return_value=[
+                RetrievedChunk(chunk_id="c1", source_id="s1", content="Result", score=0.8),
+            ]
+        ),
     )
 
     service = RetrievalService(
-        vector_search=vector_search,
-        keyword_search=None,
+        retrieval_methods=[mock_vector],
         reranking=mock_reranker,
         top_k=5,
         query_rewriter=mock_rewriter,
