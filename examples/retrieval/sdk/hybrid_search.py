@@ -94,6 +94,16 @@ async def main():
         for match in matches:
             print(f"  [{match.score:.2f}] {match.title}: {match.excerpt[:100]}...")
 
+        # --- Direct method access (new modular API) ---
+        print("\n=== Direct method access ===")
+        print(f"Configured methods: {', '.join(m.name for m in rag.retrieval)}")
+
+        # Vector search only (dense + SPLADE hybrid)
+        vector_only = await rag.retrieval.vector.search("compressor pressure", top_k=3)
+        print(f"\nVector-only results: {len(vector_only)}")
+        for chunk in vector_only:
+            print(f"  [{chunk.score:.2f}] {chunk.content[:100]}...")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
