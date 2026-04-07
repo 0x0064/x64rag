@@ -322,6 +322,31 @@ During retrieval, the graph store runs as a fourth concurrent search path. Entit
 
 This answers relational questions — "what connects to Motor M1?", "which breakers feed this panel?" — that no amount of text search can answer reliably.
 
+### Tree Search (reasoning-based retrieval)
+
+All the search techniques above work by matching content — finding text that's similar to the query (semantic), contains the right terms (keyword), or matches exactly (substring). But they share a limitation: they treat documents as flat collections of chunks or text. A 200-page annual report gets split into hundreds of independent fragments, and the system has no concept of the document's natural hierarchy — chapters, sections, subsections.
+
+**Tree search** takes a fundamentally different approach. During ingestion, the SDK builds a hierarchical tree index that represents the document's natural structure — detecting or extracting its table of contents, mapping sections to page ranges, and generating summaries at each level. At query time, instead of similarity search, an LLM reads the tree structure and *reasons* about which sections are relevant — the same way a human would scan a table of contents before flipping to the right chapter.
+
+The retrieval uses a BAML tool-use loop where the LLM can:
+- **Fetch pages** — read specific pages to gather evidence
+- **Drill down** — zoom into a subtree for deeper inspection
+- **Resolve** — declare the final set of relevant pages
+
+Simple queries resolve in a single step. Complex documents get multi-step traversal. Cost is bounded by a configurable maximum step count.
+
+**Why this matters:** Vector search finds content that *looks similar* to the query. Tree search finds content that *is relevant*. For long, structured documents — financial reports, legal contracts, technical manuals, compliance filings — tree search consistently finds the right sections, even when the query uses completely different language than the document.
+
+| Scenario | Vector Search | Tree Search | Both |
+|----------|--------------|-------------|------|
+| Short documents, simple questions | Best | Overkill | — |
+| Long structured docs (reports, filings, contracts) | Weak | Best | Ideal |
+| High accuracy matters, cost secondary | — | Best | Ideal |
+| Low latency, high throughput | Best | Slow | — |
+| Explainable retrieval needed | Weak | Best | — |
+
+Tree search is opt-in at both ingestion time (`tree_index=True`) and query time (via `TreeSearchConfig`). When enabled alongside vector search, tree results are merged with all other search paths via reciprocal rank fusion — the generation layer gets the best of both worlds.
+
 ### How They All Fit Together
 
 | Technique | Where | Tokenizes? | Best for |
@@ -331,44 +356,48 @@ This answers relational questions — "what connects to Motor M1?", "which break
 | Full-text ranking (`ts_rank` / BM25) | Document store | Yes | Keyword matching with full document context |
 | Substring matching (`ILIKE` / string search) | Document store | No | Exact identifiers, part numbers, precise values |
 | Graph traversal (Cypher) | Graph store | No | Relational queries, connected components |
+| Tree search (LLM reasoning) | Metadata store | No | Long structured documents, section-level relevance |
 
 Results from all active stores are merged using reciprocal rank fusion. An optional reranking pass then re-scores the top results for additional precision. Source-type weighting lets you tune the balance — boosting manuals over transcripts, for example — so the pipeline reflects your domain's priorities.
 
 ```
                               Query Rewriting (optional)
                                           │
-                    ┌─────────────────────┼──────────────────────────────┐
-                    │                     │                              │
-              Vector Store          Document Store                Graph Store
-         ┌─────────────────────┐ ┌──────────────────────┐  ┌────────────────────┐
-         │ Dense (semantic)    │ │ Full-text ranking     │  │ Entity matching    │
-         │ Sparse (keyword)   │ │ Substring matching    │  │ N-hop traversal   │
-         │ + Parent expansion │ │ + Excerpt extraction  │  │ + Entity cards    │
-         └─────────┬──────────┘ └──────────┬────────────┘  └─────────┬──────────┘
-                    │                      │                          │
-                    └──────────────────────┼──────────────────────────┘
-                                           │
-                                           ▼
-                               Reciprocal Rank Fusion
-                                           │
-                                           ▼
-                                   Reranking (optional)
-                                           │
-                                           ▼
-                               Grounding Gates → Generation → Answer with sources
+            ┌──────────────┬──────────────┼──────────────────────┬──────────────┐
+            │              │              │                      │              │
+      Vector Store   Document Store  Graph Store          Tree Search    Enrich Store
+    ┌──────────────┐ ┌─────────────┐ ┌──────────────┐  ┌──────────────┐ ┌────────────┐
+    │ Dense        │ │ Full-text   │ │ Entity match │  │ LLM reasons  │ │ Structured │
+    │ Sparse       │ │ Substring   │ │ N-hop        │  │ over tree    │ │ field      │
+    │ + Parent exp │ │ + Excerpts  │ │ + Cards      │  │ + Tool loop  │ │ filtering  │
+    └──────┬───────┘ └──────┬──────┘ └──────┬───────┘  └──────┬───────┘ └─────┬──────┘
+            │               │               │                  │               │
+            └───────────────┴───────────────┼──────────────────┴───────────────┘
+                                            │
+                                            ▼
+                                Reciprocal Rank Fusion
+                                            │
+                                            ▼
+                                    Reranking (optional)
+                                            │
+                                            ▼
+                                Grounding Gates → Generation → Answer with sources
 ```
 
 ## How Ingestion Works
 
-Documents go through a two-track pipeline from a single parse step:
+Documents go through a multi-track pipeline from a single parse step:
 
 **Chunk track** — Parsed pages are split into semantic chunks. Each chunk is enriched with document-level context (source name, section, document type) before embedding, so the resulting vectors capture both the chunk's content and its position in the knowledge base. Dense embeddings go to the vector store alongside sparse vectors for hybrid search. Parent chunk references are preserved, enabling narrow-search-wide-retrieve at query time.
 
 **Document track** — Parsed pages are concatenated into a full rendered document and stored in the document store. This feeds full-document search. The full text is preserved before chunking, so no information is lost.
 
+**Tree track (opt-in)** — When `tree_index=True` is passed to ingestion, the SDK builds a hierarchical tree index of the document's natural structure. It detects the table of contents (or extracts one via LLM if none exists), maps sections to page ranges, verifies section positions, splits oversized sections, and optionally generates section summaries. The tree index and page content are stored in the metadata store for query-time tree search. This adds multiple LLM calls during ingestion — a deliberate cost-quality tradeoff for documents where section-level retrieval matters.
+
 ```
 File → Parse (PDF/text/image/vision) → ┬─→ Chunk → Contextualize → Embed (dense + sparse) → Vector Store
-                                       └─→ Full text → Document Store
+                                       ├─→ Full text → Document Store
+                                       └─→ Tree index (opt-in) → TOC → Structure → Summaries → Metadata Store
 ```
 
 For structured content — electrical schematics, mechanical drawings, wiring diagrams — a specialized ingestion path uses a vision model to analyze each page: classifying page types, extracting entities (component names, ratings, connections), detecting tables, and discovering cross-page relationships. The full analyzed content is stored in the vector store (as embeddings), the document store (as searchable text), and optionally the graph store (as entity nodes and relationship edges for relational queries).
@@ -423,6 +452,15 @@ Server Config
 │   ├── Parent expansion      (return parent chunk for wider context)
 │   ├── Source weights         (boost manuals over transcripts)
 │   └── Top-k                 (how many results to return)
+├── Tree Indexing (optional)
+│   ├── LLM Model             (model for TOC detection, structure extraction, summaries)
+│   ├── TOC scan pages         (how many pages to scan for table of contents)
+│   ├── Max pages/tokens per node (triggers recursive splitting)
+│   └── Generate summaries/description (opt-in per feature)
+├── Tree Search (optional)
+│   ├── LLM Model             (model for reasoning-based tree traversal)
+│   ├── Max steps              (cap on tool-use loop iterations)
+│   └── Max context tokens     (budget for accumulated page content)
 └── Generation
     ├── LLM Provider          (generation model)
     ├── System prompt          (instructions for the model)
@@ -461,6 +499,8 @@ A minimal deployment needs only a vector store and embeddings. A full deployment
 | **Graph Traversal** | Following connections between entities in a knowledge graph. N-hop traversal finds entities within N relationship steps of a starting point. |
 | **Entity Deduplication** | Recognizing that the same entity mentioned across multiple documents is one node in the graph, not many. |
 | **Multi-Path Retrieval** | Running multiple search strategies in parallel and fusing results for broader coverage. |
+| **Tree Index** | A hierarchical structure representing a document's sections, page ranges, and summaries — built from the table of contents or extracted via LLM. |
+| **Tree Search** | Reasoning-based retrieval where an LLM navigates a document's tree structure to find relevant sections, instead of using similarity search. |
 | **Hallucination** | When an AI confidently states something unsupported by the provided context. |
 | **Source Attribution** | Tracing every answer back to specific documents, pages, and sections. |
 

@@ -2,7 +2,7 @@
 
 ## Retrieval-Augmented Generation
 
-Composable retrieval-augmented generation. Ingest documents, search across vector, document, and graph stores in parallel, generate grounded answers with quality gates.
+Composable retrieval-augmented generation. Ingest documents, search across vector, document, graph, and tree stores in parallel, generate grounded answers with quality gates.
 
 [Documentation](src/x64rag/retrieval/README.md) · [Examples](examples/retrieval)
 
@@ -21,6 +21,7 @@ config = RagServerConfig(
 
 async with RagServer(config) as rag:
     await rag.ingest("manual.pdf", knowledge_id="equipment")
+    await rag.ingest("annual_report.pdf", knowledge_id="reports", tree_index=True)  # tree indexing for structured docs
     result = await rag.query("How do I replace the filter?", knowledge_id="equipment")
     print(result.answer)
 ```

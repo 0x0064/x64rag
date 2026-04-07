@@ -46,8 +46,8 @@ src/x64rag/
 │   ├── common/           # Re-exports from x64rag.common + retrieval-specific (models, formatting, hashing, page_range)
 │   ├── server.py         # RagServer — main entry point, wires all modules
 │   ├── modules/
-│   │   ├── ingestion/    # chunk/ (chunker, parsers, batch), analyze/ (structured 3-phase), embeddings/, vision/
-│   │   ├── retrieval/    # search/ (vector, keyword/BM25, reranking/, rewriting/), refinement/, enrich/, judging
+│   │   ├── ingestion/    # chunk/ (chunker, parsers, batch), analyze/ (structured 3-phase), embeddings/, vision/, tree/ (TOC detection, structure building)
+│   │   ├── retrieval/    # search/ (vector, keyword/BM25, reranking/, rewriting/), refinement/, enrich/, judging, tree/ (BAML tool-use loop)
 │   │   ├── generation/   # service, step, grounding, confidence
 │   │   ├── knowledge/    # manager (CRUD), migration
 │   │   └── evaluation/   # metrics (ExactMatch, F1, LLMJudge), retrieval_metrics
@@ -80,12 +80,13 @@ src/x64rag/
 The retrieval pipeline in `RagServer` runs in this order:
 
 1. **Query rewriting** (pre-retrieval, optional) — HyDE, multi-query, or step-back. Expands 1 query into multiple variants via an LLM call. Configured via `RetrievalConfig.query_rewriter`.
-2. **Multi-path search** (per query) — up to 5 concurrent paths, results merged via reciprocal rank fusion:
+2. **Multi-path search** (per query) — up to 6 concurrent paths, results merged via reciprocal rank fusion:
    - **Vector** — Dense similarity (always on) + SPLADE sparse vectors (hybrid search in Qdrant when `sparse_embeddings` configured)
    - **Keyword/BM25** — In-memory BM25 via `rank-bm25` (`bm25_enabled=True`). Auto-disabled when sparse embeddings are configured since SPLADE supersedes it.
    - **Document** — Full-text + substring search (requires document store)
    - **Graph** — Entity lookup + N-hop traversal (requires graph store)
    - **Enrich** — Structured retrieval with field filtering (requires metadata store)
+   - **Tree** — LLM reasoning over hierarchical document structure (requires metadata store + `TreeSearchConfig.enabled`)
 3. **Reranking** (optional) — Cross-encoder reranking against original query (Cohere, Voyage)
 4. **Chunk refinement** (optional) — Extractive (context window) or abstractive (LLM summarization) refinement
 5. **Generation** (for `query()` only) — Grounding gate → LLM relevance gate → optional clarification → LLM generation
@@ -96,8 +97,8 @@ The retrieval pipeline in `RagServer` runs in this order:
 X64RagError (common base)
 ├── ConfigurationError (shared)
 ├── RagError (retrieval)
-│   ├── IngestionError, ParseError, EmptyDocumentError, EmbeddingError, IngestionInterruptedError
-│   ├── RetrievalError, GenerationError
+│   ├── IngestionError, ParseError, EmptyDocumentError, EmbeddingError, IngestionInterruptedError, TreeIndexingError
+│   ├── RetrievalError, GenerationError, TreeSearchError
 │   └── StoreError, DuplicateSourceError, SourceNotFoundError
 └── AceError (reasoning)
     ├── AnalysisError, ClassificationError, ClusteringError
@@ -129,7 +130,7 @@ All LLM calls go through BAML for structured output parsing, retry/fallback poli
 - pytest with `asyncio_mode = "auto"` — no `@pytest.mark.asyncio` needed
 - Tests use `AsyncMock` and `SimpleNamespace` for lightweight mocking
 - Tests in `tests/` subdirectories within each SDK + inline `test_*.py` in some modules
-- 394 tests total across both SDKs
+- 487 tests total across both SDKs
 
 ## Environment Variables
 
