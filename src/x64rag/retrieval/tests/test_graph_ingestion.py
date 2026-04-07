@@ -1,15 +1,7 @@
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 from x64rag.retrieval.common.models import Source
 from x64rag.retrieval.modules.ingestion.analyze.service import AnalyzedIngestionService
-
-
-def _make_graph_method(store=None):
-    """Create a mock graph ingestion method with a _store attribute."""
-    if store is None:
-        store = AsyncMock()
-    return SimpleNamespace(name="graph", _store=store, ingest=AsyncMock(), delete=AsyncMock())
 
 
 def _make_service(graph_store=None):
@@ -23,16 +15,12 @@ def _make_service(graph_store=None):
 
     metadata_store = AsyncMock()
 
-    methods = []
-    if graph_store is not None:
-        methods.append(_make_graph_method(store=graph_store))
-
     return AnalyzedIngestionService(
         embeddings=embeddings,
         vector_store=vector_store,
         metadata_store=metadata_store,
         embedding_model_name="test:test-model",
-        ingestion_methods=methods,
+        graph_store=graph_store,
     )
 
 

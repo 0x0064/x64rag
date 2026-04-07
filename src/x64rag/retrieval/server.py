@@ -382,18 +382,9 @@ class RagServer:
             contextual_chunking=ingestion.contextual_chunking,
         )
 
-        # Structured ingestion — delegates to ingestion methods
+        # Analyzed ingestion — shares document method from main list, graph store passed directly
         if persistence.metadata_store and persistence.vector_store and ingestion.embeddings:
-            analyzed_methods: list = []
-            if persistence.document_store:
-                analyzed_methods.append(DocumentIngestion(document_store=persistence.document_store))
-            if persistence.graph_store and ingestion.lm_config:
-                analyzed_methods.append(
-                    GraphIngestion(
-                        graph_store=persistence.graph_store,
-                        lm_config=ingestion.lm_config,
-                    )
-                )
+            analyzed_methods = [m for m in ingestion_methods if m.name == "document"]
 
             self._structured_ingestion = AnalyzedIngestionService(
                 embeddings=ingestion.embeddings,
@@ -405,6 +396,7 @@ class RagServer:
                 source_type_weights=retrieval.source_type_weights,
                 on_ingestion_complete=self._on_ingestion_complete,
                 lm_config=ingestion.lm_config,
+                graph_store=persistence.graph_store,
                 ingestion_methods=analyzed_methods,
             )
             if not ingestion.vision:
