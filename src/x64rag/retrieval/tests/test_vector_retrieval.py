@@ -133,11 +133,61 @@ async def test_name_and_weight_properties():
 
 
 async def test_invalidate_cache():
+    """BM25 cache should be cleared after invalidation."""
+    vector_store = AsyncMock()
+    vector_store.search = AsyncMock(
+        return_value=[
+            VectorResult(
+                point_id="p1",
+                score=0.9,
+                payload={
+                    "content": "cached content",
+                    "source_id": "s1",
+                    "chunk_type": "child",
+                    "parent_id": None,
+                },
+            ),
+        ]
+    )
+    vector_store.scroll = AsyncMock(
+        return_value=(
+            [
+                VectorResult(
+                    point_id="p1",
+                    score=0.0,
+                    payload={
+                        "content": "cached content",
+                        "source_id": "s1",
+                        "chunk_type": "child",
+                        "source_type": None,
+                        "source_weight": 1.0,
+                        "source_name": "",
+                        "file_url": "",
+                        "tags": [],
+                        "page_number": None,
+                        "section": None,
+                    },
+                ),
+            ],
+            None,
+        )
+    )
+    embeddings = AsyncMock()
+    embeddings.embed = AsyncMock(return_value=[[0.1, 0.2]])
+
     method = VectorRetrieval(
-        vector_store=AsyncMock(),
-        embeddings=AsyncMock(),
+        vector_store=vector_store,
+        embeddings=embeddings,
         bm25_enabled=True,
         weight=1.0,
     )
+    # First search builds the cache
+    await method.search(query="cached content", top_k=5)
+    assert vector_store.scroll.call_count == 1
+
+    # Invalidate
     await method.invalidate_cache(knowledge_id=None)
-    await method.invalidate_cache(knowledge_id="kb-1")
+
+    # Second search should rebuild the cache (scroll called again)
+    await method.search(query="cached content", top_k=5)
+    assert vector_store.scroll.call_count == 2
