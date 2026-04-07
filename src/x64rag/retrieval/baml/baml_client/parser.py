@@ -65,6 +65,12 @@ class LlmResponseParser:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="ExtractDocumentStructure", llm_response=llm_response, mode="request")
         return typing.cast(types.ExtractedStructure, __result__)
 
+    def ExtractEntitiesFromText(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> types.PageAnalysis:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="ExtractEntitiesFromText", llm_response=llm_response, mode="request")
+        return typing.cast(types.PageAnalysis, __result__)
+
     def FindSectionStart(
         self, llm_response: str, baml_options: BamlCallOptions = {},
     ) -> int:
@@ -204,6 +210,12 @@ class LlmStreamParser:
     ) -> stream_types.ExtractedStructure:
         __result__ = self.__options.merge_options(baml_options).parse_response(function_name="ExtractDocumentStructure", llm_response=llm_response, mode="stream")
         return typing.cast(stream_types.ExtractedStructure, __result__)
+
+    def ExtractEntitiesFromText(
+        self, llm_response: str, baml_options: BamlCallOptions = {},
+    ) -> stream_types.PageAnalysis:
+        __result__ = self.__options.merge_options(baml_options).parse_response(function_name="ExtractEntitiesFromText", llm_response=llm_response, mode="stream")
+        return typing.cast(stream_types.PageAnalysis, __result__)
 
     def FindSectionStart(
         self, llm_response: str, baml_options: BamlCallOptions = {},
