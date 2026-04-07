@@ -3,9 +3,8 @@ from unittest.mock import AsyncMock
 from x64rag.retrieval.modules.ingestion.methods.graph import GraphIngestion
 
 
-async def test_ingest_delegates_to_store():
+async def test_ingest_is_stub_that_skips():
     store = AsyncMock()
-    store.store_entities = AsyncMock()
     method = GraphIngestion(graph_store=store)
     assert method.name == "graph"
     await method.ingest(
@@ -19,12 +18,13 @@ async def test_ingest_delegates_to_store():
         tags=[],
         metadata={},
     )
-    store.store_entities.assert_called_once()
+    # Stub should NOT call any store methods during ingest
+    store.assert_not_awaited()
 
 
-async def test_delete():
+async def test_delete_calls_delete_by_source():
     store = AsyncMock()
-    store.delete_entities = AsyncMock()
+    store.delete_by_source = AsyncMock()
     method = GraphIngestion(graph_store=store)
     await method.delete("src-1")
-    store.delete_entities.assert_called_once_with("src-1")
+    store.delete_by_source.assert_called_once_with("src-1")

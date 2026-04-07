@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from x64rag.retrieval.common.errors import (
@@ -23,6 +25,9 @@ from x64rag.retrieval.modules.ingestion.vision.base import BaseVision
 from x64rag.retrieval.modules.ingestion.vision.constants import IMAGE_EXTENSIONS
 from x64rag.retrieval.stores.metadata.base import BaseMetadataStore
 
+if TYPE_CHECKING:
+    from x64rag.retrieval.modules.ingestion.base import BaseIngestionMethod
+
 logger = get_logger("chunk/ingestion")
 
 INGESTION_BATCH_SIZE = 20
@@ -41,7 +46,7 @@ class IngestionService:
     def __init__(
         self,
         chunker: SemanticChunker,
-        ingestion_methods: list,
+        ingestion_methods: list[BaseIngestionMethod],
         embedding_model_name: str = "",
         source_type_weights: dict[str, float] | None = None,
         metadata_store: BaseMetadataStore | None = None,
@@ -94,21 +99,30 @@ class IngestionService:
         hash_value: str | None = None,
         pages: list[ParsedPage] | None = None,
     ) -> None:
-        """Dispatch ingestion to all registered methods."""
+        """Dispatch ingestion to all registered methods.
+
+        Each method is wrapped in try/except so that a failure in one method
+        (e.g. tree indexing) does not abort the entire pipeline.  Methods that
+        consider themselves critical (vector, document) can still raise — the
+        exception is logged here and then the pipeline continues.
+        """
         for method in self._ingestion_methods:
-            await method.ingest(
-                source_id=source_id,
-                knowledge_id=knowledge_id,
-                source_type=source_type,
-                source_weight=source_weight,
-                title=title,
-                full_text=full_text,
-                chunks=chunks,
-                tags=tags,
-                metadata=metadata,
-                hash_value=hash_value,
-                pages=pages,
-            )
+            try:
+                await method.ingest(
+                    source_id=source_id,
+                    knowledge_id=knowledge_id,
+                    source_type=source_type,
+                    source_weight=source_weight,
+                    title=title,
+                    full_text=full_text,
+                    chunks=chunks,
+                    tags=tags,
+                    metadata=metadata,
+                    hash_value=hash_value,
+                    pages=pages,
+                )
+            except Exception as exc:
+                logger.warning("ingestion method '%s' failed: %s", method.name, exc)
 
     async def ingest(
         self,

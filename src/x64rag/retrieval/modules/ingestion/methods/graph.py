@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from typing import Any
 
 from x64rag.retrieval.common.logging import get_logger
@@ -11,7 +10,14 @@ logger = get_logger("ingestion.methods.graph")
 
 
 class GraphIngestion:
-    """Extract entities and store in graph store."""
+    """Graph ingestion stub.
+
+    Entity extraction from unstructured text requires LLM calls that are only
+    available through ``StructuredIngestionService``.  This stub satisfies the
+    ``BaseIngestionMethod`` protocol so it can be listed for future use but
+    currently skips with a warning.  ``GraphRetrieval`` (querying) still works
+    for entities created via the structured pipeline.
+    """
 
     def __init__(self, graph_store: BaseGraphStore) -> None:
         self._store = graph_store
@@ -34,14 +40,9 @@ class GraphIngestion:
         hash_value: str | None = None,
         pages: list[ParsedPage] | None = None,
     ) -> None:
-        start = time.perf_counter()
-        try:
-            await self._store.store_entities(source_id=source_id, content=full_text, knowledge_id=knowledge_id)
-            elapsed = (time.perf_counter() - start) * 1000
-            logger.info("entities stored in %.1fms", elapsed)
-        except Exception as exc:
-            elapsed = (time.perf_counter() - start) * 1000
-            logger.warning("failed in %.1fms — %s", elapsed, exc)
+        logger.warning(
+            "graph ingestion skipped — entity extraction requires StructuredIngestionService"
+        )
 
     async def delete(self, source_id: str) -> None:
-        await self._store.delete_entities(source_id)
+        await self._store.delete_by_source(source_id)

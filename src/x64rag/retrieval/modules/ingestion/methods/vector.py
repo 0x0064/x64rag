@@ -54,9 +54,6 @@ class VectorIngestion:
             vectors = await embed_batched(self._embeddings, texts)
             sparse_vectors = await self._embed_sparse_safe(texts)
 
-            if vectors:
-                await self._store.initialize(len(vectors[0]))
-
             points = self._build_points(
                 source_id,
                 chunks,

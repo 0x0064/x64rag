@@ -23,7 +23,6 @@ from x64rag.retrieval.modules.ingestion.chunk.service import IngestionService
 from x64rag.retrieval.modules.ingestion.embeddings.base import BaseEmbeddings
 from x64rag.retrieval.modules.ingestion.embeddings.sparse.base import BaseSparseEmbeddings
 from x64rag.retrieval.modules.ingestion.methods.document import DocumentIngestion
-from x64rag.retrieval.modules.ingestion.methods.graph import GraphIngestion
 from x64rag.retrieval.modules.ingestion.methods.tree import TreeIngestion
 from x64rag.retrieval.modules.ingestion.methods.vector import VectorIngestion
 from x64rag.retrieval.modules.ingestion.vision.base import BaseVision
@@ -283,8 +282,8 @@ class RagServer:
         if persistence.graph_store:
             await persistence.graph_store.initialize()
 
-        ingestion_methods: list = []
-        retrieval_methods: list = []
+        ingestion_methods: list[Any] = []
+        retrieval_methods: list[Any] = []
 
         # Vector path
         if persistence.vector_store and ingestion.embeddings:
@@ -321,9 +320,8 @@ class RagServer:
             ingestion_methods.append(DocumentIngestion(document_store=persistence.document_store))
             retrieval_methods.append(DocumentRetrieval(document_store=persistence.document_store, weight=0.8))
 
-        # Graph path
+        # Graph path (ingestion only works via StructuredIngestionService; retrieval is fine)
         if persistence.graph_store:
-            ingestion_methods.append(GraphIngestion(graph_store=persistence.graph_store))
             retrieval_methods.append(GraphRetrieval(graph_store=persistence.graph_store, weight=0.7))
 
         # Chunker

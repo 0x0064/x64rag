@@ -12,7 +12,7 @@ class MethodNamespace[T]:
     def __init__(self, methods: list[T]) -> None:
         self._methods: dict[str, T] = {}
         for method in methods:
-            self._methods[method.name] = method  # type: ignore[union-attr]
+            self._methods[method.name] = method  # type: ignore[attr-defined]
 
     def __getattr__(self, name: str) -> T:
         try:

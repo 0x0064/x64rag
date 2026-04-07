@@ -67,10 +67,15 @@ class VectorRetrieval:
         filters: dict[str, Any] | None = None,
         knowledge_id: str | None = None,
     ) -> list[RetrievedChunk]:
+        start = time.perf_counter()
         try:
-            return await self._do_search(query, top_k, filters, knowledge_id)
+            results = await self._do_search(query, top_k, filters, knowledge_id)
+            elapsed = (time.perf_counter() - start) * 1000
+            logger.info("%d results in %.1fms", len(results), elapsed)
+            return results
         except Exception:
-            logger.warning("vector retrieval failed for query", exc_info=True)
+            elapsed = (time.perf_counter() - start) * 1000
+            logger.warning("vector retrieval failed in %.1fms", elapsed, exc_info=True)
             return []
 
     async def invalidate_cache(self, knowledge_id: str | None = None) -> None:
