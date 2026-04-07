@@ -41,6 +41,7 @@ from x64rag.retrieval.modules.generation.models import StreamEvent as StreamEven
 from x64rag.retrieval.modules.ingestion.analyze.models import DiscoveredEntity as DiscoveredEntity
 from x64rag.retrieval.modules.ingestion.analyze.models import DocumentSynthesis as DocumentSynthesis
 from x64rag.retrieval.modules.ingestion.analyze.models import PageAnalysis as PageAnalysis
+from x64rag.retrieval.modules.ingestion.base import BaseIngestionMethod as BaseIngestionMethod
 from x64rag.retrieval.modules.ingestion.embeddings.cohere import CohereEmbeddings as CohereEmbeddings
 from x64rag.retrieval.modules.ingestion.embeddings.openai import OpenAIEmbeddings as OpenAIEmbeddings
 from x64rag.retrieval.modules.ingestion.embeddings.sparse.base import BaseSparseEmbeddings as BaseSparseEmbeddings
@@ -48,10 +49,19 @@ from x64rag.retrieval.modules.ingestion.embeddings.sparse.fastembed import (
     FastEmbedSparseEmbeddings as FastEmbedSparseEmbeddings,
 )
 from x64rag.retrieval.modules.ingestion.embeddings.voyage import VoyageEmbeddings as VoyageEmbeddings
+from x64rag.retrieval.modules.ingestion.methods.document import DocumentIngestion as DocumentIngestion
+from x64rag.retrieval.modules.ingestion.methods.graph import GraphIngestion as GraphIngestion
+from x64rag.retrieval.modules.ingestion.methods.tree import TreeIngestion as TreeIngestion
+from x64rag.retrieval.modules.ingestion.methods.vector import VectorIngestion as VectorIngestion
 from x64rag.retrieval.modules.ingestion.vision.anthropic import AnthropicVision as AnthropicVision
 from x64rag.retrieval.modules.ingestion.vision.openai import OpenAIVision as OpenAIVision
+from x64rag.retrieval.modules.namespace import MethodNamespace as MethodNamespace
+from x64rag.retrieval.modules.retrieval.base import BaseRetrievalMethod as BaseRetrievalMethod
 from x64rag.retrieval.modules.retrieval.judging import BaseRetrievalJudge as BaseRetrievalJudge
 from x64rag.retrieval.modules.retrieval.judging import LLMRetrievalJudge as LLMRetrievalJudge
+from x64rag.retrieval.modules.retrieval.methods.document import DocumentRetrieval as DocumentRetrieval
+from x64rag.retrieval.modules.retrieval.methods.graph import GraphRetrieval as GraphRetrieval
+from x64rag.retrieval.modules.retrieval.methods.vector import VectorRetrieval as VectorRetrieval
 from x64rag.retrieval.modules.retrieval.refinement.abstractive import AbstractiveRefiner as AbstractiveRefiner
 from x64rag.retrieval.modules.retrieval.refinement.base import BaseChunkRefiner as BaseChunkRefiner
 from x64rag.retrieval.modules.retrieval.refinement.extractive import ExtractiveRefiner as ExtractiveRefiner
@@ -156,4 +166,14 @@ __all__ = [
     "TreeSearchResult",
     "TreeIndexingError",
     "TreeSearchError",
+    "BaseRetrievalMethod",
+    "BaseIngestionMethod",
+    "MethodNamespace",
+    "VectorRetrieval",
+    "DocumentRetrieval",
+    "GraphRetrieval",
+    "VectorIngestion",
+    "DocumentIngestion",
+    "GraphIngestion",
+    "TreeIngestion",
 ]
