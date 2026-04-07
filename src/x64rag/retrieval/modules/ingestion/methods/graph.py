@@ -1,26 +1,45 @@
 from __future__ import annotations
 
+import time
 from typing import Any
 
+from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
 from x64rag.retrieval.common.logging import get_logger
+from x64rag.retrieval.modules.ingestion.analyze.models import DiscoveredEntity, PageAnalysis
 from x64rag.retrieval.modules.ingestion.models import ChunkedContent, ParsedPage
 from x64rag.retrieval.stores.graph.base import BaseGraphStore
+from x64rag.retrieval.stores.graph.mapper import page_entities_to_graph
 
 logger = get_logger("ingestion.methods.graph")
 
+# Lazy import — avoid circular dependency and heavy BAML import at module level
+b: Any = None
+
+
+def _get_baml_client() -> Any:
+    global b
+    if b is None:
+        from x64rag.retrieval.baml.baml_client.async_client import b as _b
+
+        b = _b
+    return b
+
 
 class GraphIngestion:
-    """Graph ingestion stub.
+    """Extract entities from text via LLM and store in graph store.
 
-    Entity extraction from unstructured text requires LLM calls that are only
-    available through ``StructuredIngestionService``.  This stub satisfies the
-    ``BaseIngestionMethod`` protocol so it can be listed for future use but
-    currently skips with a warning.  ``GraphRetrieval`` (querying) still works
-    for entities created via the structured pipeline.
+    Uses the ``ExtractEntitiesFromText`` BAML function to extract entities,
+    then maps them to ``GraphEntity`` via ``page_entities_to_graph()`` and
+    stores via ``graph_store.add_entities()``.
     """
 
-    def __init__(self, graph_store: BaseGraphStore) -> None:
+    def __init__(
+        self,
+        graph_store: BaseGraphStore,
+        lm_config: LanguageModelConfig | None = None,
+    ) -> None:
         self._store = graph_store
+        self._registry = build_registry(lm_config) if lm_config else None
 
     @property
     def name(self) -> str:
@@ -40,9 +59,56 @@ class GraphIngestion:
         hash_value: str | None = None,
         pages: list[ParsedPage] | None = None,
     ) -> None:
-        logger.warning(
-            "graph ingestion skipped — entity extraction requires StructuredIngestionService"
-        )
+        if not self._registry:
+            logger.warning("graph ingestion skipped — no lm_config provided")
+            return
+
+        start = time.perf_counter()
+        try:
+            client = _get_baml_client()
+            result = await client.ExtractEntitiesFromText(
+                full_text,
+                baml_options={"client_registry": self._registry},
+            )
+
+            if not result.entities:
+                elapsed = (time.perf_counter() - start) * 1000
+                logger.info("no entities found in %.1fms", elapsed)
+                return
+
+            # Convert BAML output to internal model
+            analysis = PageAnalysis(
+                page_number=1,
+                description=result.description,
+                entities=[
+                    DiscoveredEntity(
+                        name=e.name,
+                        category=e.category,
+                        value=e.value,
+                        context=e.context,
+                    )
+                    for e in result.entities
+                ],
+                tables=[],
+                annotations=result.annotations if result.annotations else [],
+                page_type=result.page_type or "text",
+            )
+
+            # Reuse existing mapper
+            graph_entities = page_entities_to_graph(analysis, source_id)
+
+            await self._store.add_entities(
+                source_id=source_id,
+                knowledge_id=knowledge_id,
+                entities=graph_entities,
+            )
+
+            elapsed = (time.perf_counter() - start) * 1000
+            logger.info("%d entities extracted and stored in %.1fms", len(graph_entities), elapsed)
+
+        except Exception as exc:
+            elapsed = (time.perf_counter() - start) * 1000
+            logger.warning("failed in %.1fms — %s", elapsed, exc)
 
     async def delete(self, source_id: str) -> None:
         await self._store.delete_by_source(source_id)

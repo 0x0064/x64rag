@@ -17,12 +17,13 @@ from x64rag.retrieval.common.models import RetrievedChunk, Source
 from x64rag.retrieval.modules.generation.models import QueryResult, StepResult, StreamEvent
 from x64rag.retrieval.modules.generation.service import GenerationService
 from x64rag.retrieval.modules.generation.step import StepGenerationService
-from x64rag.retrieval.modules.ingestion.analyze.service import StructuredIngestionService
+from x64rag.retrieval.modules.ingestion.analyze.service import AnalyzedIngestionService
 from x64rag.retrieval.modules.ingestion.chunk.chunker import SemanticChunker
 from x64rag.retrieval.modules.ingestion.chunk.service import IngestionService
 from x64rag.retrieval.modules.ingestion.embeddings.base import BaseEmbeddings
 from x64rag.retrieval.modules.ingestion.embeddings.sparse.base import BaseSparseEmbeddings
 from x64rag.retrieval.modules.ingestion.methods.document import DocumentIngestion
+from x64rag.retrieval.modules.ingestion.methods.graph import GraphIngestion
 from x64rag.retrieval.modules.ingestion.methods.tree import TreeIngestion
 from x64rag.retrieval.modules.ingestion.methods.vector import VectorIngestion
 from x64rag.retrieval.modules.ingestion.vision.base import BaseVision
@@ -186,7 +187,7 @@ class RagServer:
         self._initialized = False
 
         self._ingestion_service: IngestionService | None = None
-        self._structured_ingestion: StructuredIngestionService | None = None
+        self._structured_ingestion: AnalyzedIngestionService | None = None
         self._retrieval_service: RetrievalService | None = None
         self._structured_retrieval: StructuredRetrievalService | None = None
         self._generation_service: GenerationService | None = None
@@ -320,8 +321,15 @@ class RagServer:
             ingestion_methods.append(DocumentIngestion(document_store=persistence.document_store))
             retrieval_methods.append(DocumentRetrieval(document_store=persistence.document_store, weight=0.8))
 
-        # Graph path (ingestion only works via StructuredIngestionService; retrieval is fine)
+        # Graph path
         if persistence.graph_store:
+            if ingestion.lm_config:
+                ingestion_methods.append(
+                    GraphIngestion(
+                        graph_store=persistence.graph_store,
+                        lm_config=ingestion.lm_config,
+                    )
+                )
             retrieval_methods.append(GraphRetrieval(graph_store=persistence.graph_store, weight=0.7))
 
         # Chunker
@@ -376,7 +384,7 @@ class RagServer:
 
         # Structured ingestion (unchanged — still takes stores directly)
         if persistence.metadata_store and persistence.vector_store and ingestion.embeddings:
-            self._structured_ingestion = StructuredIngestionService(
+            self._structured_ingestion = AnalyzedIngestionService(
                 embeddings=ingestion.embeddings,
                 vector_store=persistence.vector_store,
                 metadata_store=persistence.metadata_store,
