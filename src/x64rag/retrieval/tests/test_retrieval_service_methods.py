@@ -9,6 +9,18 @@ def _mock_method(name: str, results: list[RetrievedChunk]) -> SimpleNamespace:
     return SimpleNamespace(
         name=name,
         weight=1.0,
+        top_k=None,
+        search=AsyncMock(return_value=results),
+    )
+
+
+def _mock_method_full(
+    name: str, results: list[RetrievedChunk], weight: float = 1.0, top_k: int | None = None
+) -> SimpleNamespace:
+    return SimpleNamespace(
+        name=name,
+        weight=weight,
+        top_k=top_k,
         search=AsyncMock(return_value=results),
     )
 
@@ -99,3 +111,52 @@ async def test_reranker_applied():
     results = await service.retrieve(query="test")
     assert len(results) == 1
     assert results[0].chunk_id == "c2"
+
+
+async def test_method_weight_affects_fusion_scores():
+    high_weight = _mock_method_full(
+        "vector",
+        [
+            RetrievedChunk(chunk_id="v1", source_id="s1", content="text", score=0.9),
+        ],
+        weight=2.0,
+    )
+    low_weight = _mock_method_full(
+        "document",
+        [
+            RetrievedChunk(chunk_id="d1", source_id="s2", content="doc", score=0.9),
+        ],
+        weight=0.5,
+    )
+
+    service = RetrievalService(retrieval_methods=[high_weight, low_weight], top_k=5)
+    results = await service.retrieve(query="test")
+
+    scores = {r.chunk_id: r.score for r in results}
+    assert scores["v1"] > scores["d1"]
+
+
+async def test_method_top_k_override():
+    vector = _mock_method_full(
+        "vector",
+        [
+            RetrievedChunk(chunk_id="c1", source_id="s1", content="text", score=0.9),
+        ],
+        top_k=50,
+    )
+    document = _mock_method_full(
+        "document",
+        [
+            RetrievedChunk(chunk_id="c2", source_id="s2", content="doc", score=0.8),
+        ],
+        top_k=None,
+    )
+
+    service = RetrievalService(retrieval_methods=[vector, document], top_k=5)
+    await service.retrieve(query="test")
+
+    vector_call = vector.search.call_args
+    assert vector_call.kwargs["top_k"] == 50
+
+    doc_call = document.search.call_args
+    assert doc_call.kwargs["top_k"] == 20  # 5 * 4 = default fetch_k

@@ -10,6 +10,7 @@ def _make_service(document_method=None):
     mock_vector = SimpleNamespace(
         name="vector",
         weight=1.0,
+        top_k=None,
         search=AsyncMock(
             return_value=[
                 RetrievedChunk(chunk_id="chunk-1", source_id="src-1", content="Some chunk content", score=0.8),
@@ -30,6 +31,7 @@ async def test_retrieve_with_document_store():
     mock_document = SimpleNamespace(
         name="document",
         weight=1.0,
+        top_k=None,
         search=AsyncMock(
             return_value=[
                 RetrievedChunk(

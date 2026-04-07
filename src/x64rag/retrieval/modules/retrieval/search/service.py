@@ -63,15 +63,22 @@ class RetrievalService:
         query_results = await asyncio.gather(*search_tasks)
 
         all_result_lists: list[list[RetrievedChunk]] = []
-        for result_lists in query_results:
+        all_weights: list[float] = []
+        for result_lists, weights in query_results:
             all_result_lists.extend(result_lists)
+            all_weights.extend(weights)
 
         if tree_chunks:
             all_result_lists.append(tree_chunks)
+            all_weights.append(1.0)
             logger.info("%d tree search candidates added to fusion", len(tree_chunks))
 
         if len(all_result_lists) > 1:
-            fused = reciprocal_rank_fusion(all_result_lists, source_type_weights=self._source_type_weights)
+            fused = reciprocal_rank_fusion(
+                all_result_lists,
+                source_type_weights=self._source_type_weights,
+                method_weights=all_weights,
+            )
             logger.info("%d unique after reciprocal rank fusion", len(fused))
         elif all_result_lists:
             fused = self._apply_source_weights(all_result_lists[0])
@@ -96,18 +103,30 @@ class RetrievalService:
         fetch_k: int,
         filters: dict[str, Any] | None,
         knowledge_id: str | None,
-    ) -> list[list[RetrievedChunk]]:
+    ) -> tuple[list[list[RetrievedChunk]], list[float]]:
         """Run all retrieval methods in parallel for a single query."""
         if not self._retrieval_methods:
-            return []
+            return [], []
 
         gathered = await asyncio.gather(
             *(
-                method.search(query=query, top_k=fetch_k, filters=filters, knowledge_id=knowledge_id)
+                method.search(
+                    query=query,
+                    top_k=method.top_k if method.top_k is not None else fetch_k,
+                    filters=filters,
+                    knowledge_id=knowledge_id,
+                )
                 for method in self._retrieval_methods
             )
         )
-        return [results for results in gathered if results]
+
+        result_lists = []
+        weights = []
+        for method, results in zip(self._retrieval_methods, gathered, strict=True):
+            if results:
+                result_lists.append(results)
+                weights.append(method.weight)
+        return result_lists, weights
 
     def _apply_source_weights(self, results: list[RetrievedChunk]) -> list[RetrievedChunk]:
         if not self._source_type_weights:

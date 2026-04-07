@@ -45,6 +45,22 @@ class TestReciprocalRankFusion:
     def test_empty_lists(self):
         assert reciprocal_rank_fusion([[], []]) == []
 
+    def test_method_weights_scale_rrf_scores(self):
+        list_a = [_chunk("a")]
+        list_b = [_chunk("b")]
+        fused = reciprocal_rank_fusion([list_a, list_b], method_weights=[2.0, 0.5])
+        scores = {c.chunk_id: c.score for c in fused}
+        assert scores["a"] > scores["b"]
+
+    def test_method_weights_none_defaults_to_one(self):
+        list_a = [_chunk("a")]
+        list_b = [_chunk("b")]
+        fused_weighted = reciprocal_rank_fusion([list_a, list_b], method_weights=None)
+        fused_default = reciprocal_rank_fusion([list_a, list_b])
+        scores_w = {c.chunk_id: c.score for c in fused_weighted}
+        scores_d = {c.chunk_id: c.score for c in fused_default}
+        assert scores_w == scores_d
+
     def test_three_lists_fusion(self):
         list_a = [_chunk("a"), _chunk("b")]
         list_b = [_chunk("b"), _chunk("c")]

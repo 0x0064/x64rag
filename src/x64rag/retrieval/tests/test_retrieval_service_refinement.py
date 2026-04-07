@@ -13,6 +13,7 @@ def _make_service(chunk_refiner=None, reranking=None):
     mock_vector = SimpleNamespace(
         name="vector",
         weight=1.0,
+        top_k=None,
         search=AsyncMock(return_value=[_chunk("v1", 0.9), _chunk("v2", 0.8)]),
     )
     return RetrievalService(
@@ -70,6 +71,7 @@ class TestChunkRefinerWiring:
         mock_vector = SimpleNamespace(
             name="vector",
             weight=1.0,
+            top_k=None,
             search=AsyncMock(return_value=[]),
         )
 

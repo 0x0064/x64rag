@@ -218,6 +218,7 @@ def _make_retrieval_service(query_rewriter=None):
     mock_vector = SimpleNamespace(
         name="vector",
         weight=1.0,
+        top_k=None,
         search=AsyncMock(
             return_value=[
                 RetrievedChunk(chunk_id="chunk-1", source_id="src-1", content="Vector result", score=0.8),
@@ -248,6 +249,7 @@ async def test_retrieve_with_rewriter_searches_original_and_rewritten():
     mock_vector = SimpleNamespace(
         name="vector",
         weight=1.0,
+        top_k=None,
         search=AsyncMock(
             side_effect=[
                 [RetrievedChunk(chunk_id="orig-1", source_id="s1", content="Original result", score=0.9)],
@@ -282,6 +284,7 @@ async def test_retrieve_with_rewriter_deduplicates_via_fusion():
     mock_vector = SimpleNamespace(
         name="vector",
         weight=1.0,
+        top_k=None,
         search=AsyncMock(
             side_effect=[
                 [shared_chunk],
@@ -327,6 +330,7 @@ async def test_reranker_receives_original_query_not_rewritten():
     mock_vector = SimpleNamespace(
         name="vector",
         weight=1.0,
+        top_k=None,
         search=AsyncMock(
             return_value=[
                 RetrievedChunk(chunk_id="c1", source_id="s1", content="Result", score=0.8),

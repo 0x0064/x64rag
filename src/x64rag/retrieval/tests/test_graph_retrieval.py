@@ -11,6 +11,7 @@ def _make_service(graph_method=None, document_method=None):
     mock_vector = SimpleNamespace(
         name="vector",
         weight=1.0,
+        top_k=None,
         search=AsyncMock(
             return_value=[
                 RetrievedChunk(chunk_id="chunk-1", source_id="src-1", content="Vector result", score=0.8),
@@ -60,6 +61,7 @@ def _make_graph_method(graph_results):
     return SimpleNamespace(
         name="graph",
         weight=1.0,
+        top_k=None,
         search=AsyncMock(return_value=chunks),
     )
 
@@ -128,6 +130,7 @@ async def test_graph_store_empty_result_no_fusion():
     mock_graph = SimpleNamespace(
         name="graph",
         weight=1.0,
+        top_k=None,
         search=AsyncMock(return_value=[]),
     )
 
@@ -145,6 +148,7 @@ async def test_graph_and_document_store_together():
     mock_document = SimpleNamespace(
         name="document",
         weight=1.0,
+        top_k=None,
         search=AsyncMock(
             return_value=[
                 RetrievedChunk(
