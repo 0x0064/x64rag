@@ -1,6 +1,7 @@
 import asyncio
 import re
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -40,6 +41,7 @@ class VectorRetrieval:
         parent_expansion: bool = False,
         bm25_enabled: bool = False,
         bm25_max_indexes: int = 16,
+        bm25_tokenizer: Callable[[str], list[str]] | None = None,
         weight: float = 1.0,
         top_k: int | None = None,
     ) -> None:
@@ -49,6 +51,7 @@ class VectorRetrieval:
         self._parent_expansion = parent_expansion
         self._bm25_enabled = bm25_enabled
         self._bm25_max_indexes = bm25_max_indexes
+        self._tokenize_fn = bm25_tokenizer or _tokenize
         self._weight = weight
         self._top_k = top_k
         self._bm25_cache: dict[str, _BM25Entry] = {}
@@ -232,7 +235,7 @@ class VectorRetrieval:
 
         entry.last_used = time.monotonic()
 
-        tokenized_query = _tokenize(query)
+        tokenized_query = self._tokenize_fn(query)
         scores = entry.index.get_scores(tokenized_query)
 
         scored = sorted(
@@ -308,7 +311,8 @@ class VectorRetrieval:
                 return
 
             loop = asyncio.get_running_loop()
-            tokenized = await loop.run_in_executor(None, lambda: [_tokenize(c["content"]) for c in all_chunks])
+            tokenize_fn = self._tokenize_fn
+            tokenized = await loop.run_in_executor(None, lambda: [tokenize_fn(c["content"]) for c in all_chunks])
             index = await loop.run_in_executor(None, lambda: BM25Okapi(tokenized))
             self._bm25_cache[key] = _BM25Entry(index=index, chunks=all_chunks, last_used=time.monotonic())
             logger.info("built bm25 index for knowledge_id=%s: %d chunks", knowledge_id, len(all_chunks))
