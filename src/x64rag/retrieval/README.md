@@ -72,11 +72,41 @@ config = RagServerConfig(
 )
 ```
 
-Only `persistence.vector_store` and `ingestion.embeddings` are required. Everything else is optional — add stores, search paths, and quality gates as needed.
+At least one retrieval path must be configured: vector (`vector_store` + `embeddings`), document (`document_store`), or graph (`graph_store`). Everything else is optional — add stores, search paths, and quality gates as needed.
 
 ---
 
 ## Modules
+
+### Pipeline Methods
+
+After initialization, `RagServer` exposes configured pipeline methods via namespace properties. Use these for fine-grained control over individual retrieval and ingestion paths.
+
+```python
+async with RagServer(config) as rag:
+    # Attribute access — call individual methods directly
+    chunks = await rag.retrieval.vector.search("query", top_k=20)
+    doc_chunks = await rag.retrieval.document.search("query", top_k=10)
+
+    # Conditional fallback
+    if len(chunks) < 5 and "document" in rag.retrieval:
+        chunks.extend(await rag.retrieval.document.search("query", top_k=10))
+
+    # Iterate all configured methods
+    for method in rag.retrieval:
+        results = await method.search("query", top_k=10)
+        print(f"{method.name}: {len(results)} results")
+
+    # Check what's configured
+    print("vector" in rag.retrieval)   # True if vector_store + embeddings configured
+    print("document" in rag.retrieval) # True if document_store configured
+    print("graph" in rag.retrieval)    # True if graph_store configured
+
+    # Feed hand-picked results into generation
+    answer = await rag.generate(query="What is GDPR?", chunks=chunks)
+```
+
+Methods are self-contained: each handles its own errors (returns empty list on failure) and logs with hierarchical prefixes (`retrieval.methods.vector`, `retrieval.methods.document`).
 
 ### Ingestion
 
@@ -164,10 +194,10 @@ When enabled, rewriting runs before all search paths. The rewritten queries feed
 
 #### Search paths
 
-Up to six search paths run concurrently per query and merge results via reciprocal rank fusion:
+Up to five search paths run concurrently per query and merge results via reciprocal rank fusion:
 
 - **Vector** — Dense semantic similarity (always active). When `sparse_embeddings` is configured, SPLADE sparse vectors are stored alongside dense vectors and Qdrant runs hybrid search (dense + sparse) in a single query, combining semantic understanding with exact term matching.
-- **Keyword** — In-memory BM25 ranking via `rank-bm25` (when `bm25_enabled=True`). Builds BM25Okapi indexes per knowledge_id with LRU eviction. This is a simpler alternative to sparse embeddings — if `sparse_embeddings` is configured, BM25 is automatically disabled since SPLADE provides superior term-aware matching integrated directly into the vector store.
+- **BM25** — In-memory BM25 ranking, runs inside `VectorRetrieval` when `bm25_enabled=True`. Automatically disabled when `sparse_embeddings` is configured.
 - **Document** — Full-text ranked search + substring matching on original documents (requires document store).
 - **Graph** — Entity full-text lookup + N-hop relationship traversal (requires graph store).
 - **Enrich** — Structured retrieval with entity field filtering and cross-reference enrichment (requires metadata store).
@@ -250,14 +280,16 @@ Evaluate retrieval and generation quality with configurable metrics.
 
 ## Persistence
 
-Four stores, each optional except the vector store:
+Four stores, all optional individually:
 
 | Store | Purpose | Required |
 |-------|---------|----------|
-| **Vector store** | Chunk embeddings for semantic search | Yes |
+| **Vector store** | Chunk embeddings for semantic search | No (needs embeddings) |
 | **Metadata store** | Source tracking, stats, analyze pipeline | No |
 | **Document store** | Full document text for substring search | No |
 | **Graph store** | Entity relationships for graph traversal | No |
+
+At least one of vector, document, or graph must be configured.
 
 ## Providers
 
@@ -353,7 +385,7 @@ Async context manager: `async with RagServer(config) as rag:`
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `vector_store` | `BaseVectorStore` | required | Vector store for embeddings |
+| `vector_store` | `BaseVectorStore` | `None` | Vector store for embeddings |
 | `metadata_store` | `BaseMetadataStore` | `None` | Source metadata, stats, analyze pipeline |
 | `document_store` | `BaseDocumentStore` | `None` | Full document text for substring search |
 | `graph_store` | `BaseGraphStore` | `None` | Entity-relationship graph (Neo4j) |
@@ -362,7 +394,7 @@ Async context manager: `async with RagServer(config) as rag:`
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `embeddings` | `BaseEmbeddings` | required | Embedding provider |
+| `embeddings` | `BaseEmbeddings` | `None` | Embedding provider (required for vector path) |
 | `vision` | `BaseVision` | `None` | Vision provider for images and PDF analysis |
 | `chunk_size` | `int` | `500` | Target tokens per chunk |
 | `chunk_overlap` | `int` | `50` | Token overlap between chunks |
