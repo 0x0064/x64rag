@@ -4,7 +4,7 @@ Retrieval / Reasoning Augmented Generation (RAG) Python SDK
 
 ## Retrieval-Augmented Generation
 
-Composable retrieval-augmented generation. Ingest documents, search across vector, document, graph, and tree stores with modular pipeline methods, generate grounded answers with quality gates.
+Modular retrieval-augmented generation with pluggable pipeline methods. No mandatory vector database — configure the retrieval paths you need: dense and sparse vector search, BM25 keyword matching, full-text document search, entity-relationship graph traversal, and LLM-powered tree navigation over hierarchical document structure. Methods run concurrently with per-method weights, results fuse via reciprocal rank fusion, and each method handles its own errors independently. Ingest through chunking, vision-analyzed drawings, or LLM entity extraction. Generate grounded answers with score gates, relevance judgment, and clarification flows.
 
 [Documentation](src/x64rag/retrieval/README.md) · [Examples](examples/retrieval)
 
@@ -79,6 +79,20 @@ x64rag reasoning analyze "My order FB-12345 hasn't arrived and I need it by Frid
 x64rag reasoning classify "I want my money back" --categories categories.json
 x64rag reasoning compliance "We'll give you 150% refund" --references policy.md
 ```
+
+## Why x64rag
+
+### vs. Long Context + Grep
+
+Long context windows and lexical search work for small document sets where you know what terms to look for. They break when knowledge bases grow beyond context limits, when users ask semantic questions ("how to change oil" vs. the manual's "lubricant replacement procedure"), and when you need entity relationships that no amount of text matching can surface. x64rag makes vector search optional — you can run document-store-only or graph-only configs — but when you need semantic understanding across thousands of pages, concurrent multi-path retrieval with fusion outperforms any single method.
+
+### vs. Vectorless Tree Search (PageIndex)
+
+Tree-based retrieval proves that LLM reasoning over document structure beats vector similarity for navigating long structured documents. x64rag's tree search follows the same principle — build a hierarchical index, let the LLM navigate it. The difference is that tree search is one method in the pipeline, not the only one. When the tree can't find the answer (wrong section, entity not in the TOC), vector search, BM25, document search, and graph traversal are all running in parallel. Tree search adds structural precision; the other methods add breadth and resilience.
+
+### vs. LangChain / LlamaIndex
+
+Framework orchestrators provide abstractions over LLM calls, prompt chains, and retrieval steps. x64rag is not an orchestrator — it's a retrieval engine. It owns the full pipeline from document parsing through chunk embedding, multi-path search, reranking, and grounded generation. No chain composition, no prompt templates, no agent loops. One `async with RagServer(config) as rag:` gives you ingestion, retrieval, and generation with quality gates. Use it inside LangChain if you want, or use it standalone — the SDK handles the retrieval problem end-to-end without external framework dependencies.
 
 ## Installation
 
