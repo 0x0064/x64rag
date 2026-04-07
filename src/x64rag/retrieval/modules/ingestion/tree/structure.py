@@ -2,19 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Any
 
 from x64rag.retrieval.common.models import TreeNode
-
-
-class _PageLike(Protocol):
-    """Structural type for page objects with index and token_count."""
-
-    @property
-    def index(self) -> int: ...
-
-    @property
-    def token_count(self) -> int: ...
 
 
 def build_tree(sections: list[dict[str, Any]]) -> list[TreeNode]:

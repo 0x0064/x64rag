@@ -4,9 +4,13 @@ import asyncio
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from x64rag.retrieval.common.errors import ConfigurationError
+
+if TYPE_CHECKING:
+    from x64rag.retrieval.modules.ingestion.tree.service import TreeIndexingService
+    from x64rag.retrieval.modules.retrieval.tree.service import TreeSearchService
 from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.common.models import RetrievedChunk, Source
@@ -184,8 +188,8 @@ class RagServer:
         self._knowledge_manager: KnowledgeManager | None = None
         self._keyword_search: KeywordSearch | None = None
         self._step_service: StepGenerationService | None = None
-        self._tree_indexing_service: Any = None
-        self._tree_search_service: Any = None
+        self._tree_indexing_service: TreeIndexingService | None = None
+        self._tree_search_service: TreeSearchService | None = None
 
         self._retrieval_by_collection: dict[str, tuple[RetrievalService, StructuredRetrievalService | None]] = {}
         self._ingestion_by_collection: dict[str, IngestionService] = {}
@@ -373,9 +377,9 @@ class RagServer:
             )
             logger.info("tree indexing: enabled")
 
-        # Tree search service
+        # Tree search service (requires metadata store for loading tree indexes)
         self._tree_search_service = None
-        if cfg.tree_search.enabled:
+        if cfg.tree_search.enabled and persistence.metadata_store:
             from x64rag.retrieval.modules.retrieval.tree.service import TreeSearchService
 
             tree_search_registry = build_registry(cfg.tree_search.model) if cfg.tree_search.model else None
@@ -720,20 +724,65 @@ class RagServer:
         else:
             chunks = await unstructured.retrieve(query=retrieval_query, knowledge_id=knowledge_id)
 
-        # TODO: Tree search integration
-        # When self._tree_search_service is set, load tree indexes from the metadata store
-        # for sources matching knowledge_id, run tree search, convert results to RetrievedChunk
-        # via TreeSearchService.to_retrieved_chunks(), and merge with existing chunks.
-        # This requires page content (list[PageContent]) at query time, which means either:
-        # - Re-reading the original document (requires file path from metadata)
-        # - Storing pages alongside the tree index in the metadata store
-        # - Reconstructing pages from the document store content
-        # For now, tree search is wired for initialization only; retrieval integration
-        # will be completed once page content access at query time is resolved.
+        # Tree search: load tree indexes and run LLM-based tree retrieval
+        if self._tree_search_service and self._config.persistence.metadata_store:
+            tree_chunks = await self._run_tree_search(
+                query=retrieval_query,
+                knowledge_id=knowledge_id,
+            )
+            if tree_chunks:
+                chunks = await unstructured.retrieve(
+                    query=retrieval_query,
+                    knowledge_id=knowledge_id,
+                    tree_chunks=tree_chunks,
+                )
 
         if min_score is not None:
             chunks = [c for c in chunks if c.score >= min_score]
         return chunks
+
+    async def _run_tree_search(
+        self,
+        query: str,
+        knowledge_id: str | None,
+    ) -> list[RetrievedChunk]:
+        """Load tree indexes for relevant sources and run tree search."""
+        import json
+
+        from x64rag.retrieval.common.models import TreeIndex
+        from x64rag.retrieval.modules.ingestion.tree.toc import PageContent
+
+        assert self._tree_search_service is not None
+        metadata_store = self._config.persistence.metadata_store
+        assert metadata_store is not None
+
+        # Get sources that might have tree indexes
+        sources = await metadata_store.list_sources(knowledge_id=knowledge_id)
+        all_tree_chunks: list[RetrievedChunk] = []
+
+        for source in sources:
+            tree_json = await metadata_store.get_tree_index(source.source_id)
+            if not tree_json:
+                continue
+
+            tree_index = TreeIndex.from_dict(json.loads(tree_json))
+            if not tree_index.pages:
+                logger.warning("tree index for %s has no stored pages, skipping tree search", source.source_id)
+                continue
+
+            # Convert stored TreePage back to PageContent for the search service
+            pages = [PageContent(index=p.index, text=p.text, token_count=p.token_count) for p in tree_index.pages]
+
+            results = await self._tree_search_service.search(
+                query=query,
+                tree_index=tree_index,
+                pages=pages,
+            )
+
+            if results:
+                all_tree_chunks.extend(self._tree_search_service.to_retrieved_chunks(results, tree_index))
+
+        return all_tree_chunks
 
     def _get_retrieval(self, collection: str | None) -> tuple[RetrievalService, StructuredRetrievalService | None]:
         """Return retrieval pipeline for *collection* (default if None)."""

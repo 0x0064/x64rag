@@ -9,7 +9,7 @@ from typing import Any
 from x64rag.common.concurrency import run_concurrent
 from x64rag.retrieval.common.errors import TreeIndexingError
 from x64rag.retrieval.common.logging import get_logger
-from x64rag.retrieval.common.models import TreeIndex, TreeNode
+from x64rag.retrieval.common.models import TreeIndex, TreeNode, TreePage
 from x64rag.retrieval.modules.ingestion.tree.structure import (
     build_tree,
     calculate_page_ranges,
@@ -93,12 +93,16 @@ class TreeIndexingService:
         if not sections:
             raise TreeIndexingError("no sections found in document")
 
-        # Step 3: verify section positions
+        # Step 3: verify section positions and filter out unverified
         sections = await verify_section_positions(
             sections=sections,
             pages=pages,
             registry=self._registry,
         )
+        sections = [s for s in sections if s.get("verified", True)]
+
+        if not sections:
+            raise TreeIndexingError("no verified sections found in document")
 
         # Step 4: build tree and calculate page ranges
         roots = build_tree(sections)
@@ -121,6 +125,8 @@ class TreeIndexingService:
         if self._config.generate_description:
             doc_description = await self._generate_doc_description(roots)
 
+        tree_pages = [TreePage(index=p.index, text=p.text, token_count=p.token_count) for p in pages]
+
         tree_index = TreeIndex(
             source_id=source_id,
             doc_name=doc_name,
@@ -128,6 +134,7 @@ class TreeIndexingService:
             structure=roots,
             page_count=len(pages),
             created_at=datetime.now(UTC),
+            pages=tree_pages,
         )
 
         logger.debug(

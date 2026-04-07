@@ -16,12 +16,18 @@ from x64rag.retrieval.common.errors import RagError as RagError
 from x64rag.retrieval.common.errors import RetrievalError as RetrievalError
 from x64rag.retrieval.common.errors import SourceNotFoundError as SourceNotFoundError
 from x64rag.retrieval.common.errors import StoreError as StoreError
+from x64rag.retrieval.common.errors import TreeIndexingError as TreeIndexingError
+from x64rag.retrieval.common.errors import TreeSearchError as TreeSearchError
 from x64rag.retrieval.common.language_model import LanguageModelClientConfig as LanguageModelClientConfig
 from x64rag.retrieval.common.language_model import LanguageModelConfig as LanguageModelConfig
 from x64rag.retrieval.common.models import ContentMatch as ContentMatch
 from x64rag.retrieval.common.models import RetrievedChunk as RetrievedChunk
 from x64rag.retrieval.common.models import Source as Source
 from x64rag.retrieval.common.models import SparseVector as SparseVector
+from x64rag.retrieval.common.models import TreeIndex as TreeIndex
+from x64rag.retrieval.common.models import TreeNode as TreeNode
+from x64rag.retrieval.common.models import TreePage as TreePage
+from x64rag.retrieval.common.models import TreeSearchResult as TreeSearchResult
 from x64rag.retrieval.modules.evaluation.metrics import ExactMatch as ExactMatch
 from x64rag.retrieval.modules.evaluation.metrics import F1Score as F1Score
 from x64rag.retrieval.modules.evaluation.metrics import LLMJudge as LLMJudge
@@ -61,6 +67,8 @@ from x64rag.retrieval.server import PersistenceConfig as PersistenceConfig
 from x64rag.retrieval.server import RagServer as RagServer
 from x64rag.retrieval.server import RagServerConfig as RagServerConfig
 from x64rag.retrieval.server import RetrievalConfig as RetrievalConfig
+from x64rag.retrieval.server import TreeIndexingConfig as TreeIndexingConfig
+from x64rag.retrieval.server import TreeSearchConfig as TreeSearchConfig
 from x64rag.retrieval.stores.document.base import BaseDocumentStore as BaseDocumentStore
 from x64rag.retrieval.stores.document.filesystem import FilesystemDocumentStore as FilesystemDocumentStore
 from x64rag.retrieval.stores.document.postgres import PostgresDocumentStore as PostgresDocumentStore
@@ -140,4 +148,12 @@ __all__ = [
     "BaseChunkRefiner",
     "ExtractiveRefiner",
     "AbstractiveRefiner",
+    "TreeIndexingConfig",
+    "TreeSearchConfig",
+    "TreeNode",
+    "TreePage",
+    "TreeIndex",
+    "TreeSearchResult",
+    "TreeIndexingError",
+    "TreeSearchError",
 ]

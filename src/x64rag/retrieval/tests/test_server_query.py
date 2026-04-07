@@ -30,6 +30,8 @@ def _make_server() -> RagServer:
     server._keyword_search = None
     server._unstructured_ingestion = None
     server._structured_ingestion = None
+    server._tree_indexing_service = None
+    server._tree_search_service = None
     return server
 
 

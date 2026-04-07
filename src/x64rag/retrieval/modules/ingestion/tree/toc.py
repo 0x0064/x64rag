@@ -47,15 +47,19 @@ async def detect_toc(
     scan_limit = min(toc_scan_pages, len(pages))
     candidates = pages[:scan_limit]
 
-    toc_pages: list[PageContent] = []
-    has_page_numbers = False
-
-    for page in candidates:
+    async def _detect_page(page: PageContent) -> tuple[PageContent, Any]:
         result = await b.DetectTableOfContents(
             page_text=page.text,
             baml_options={"client_registry": registry},
         )
+        return page, result
 
+    results = await asyncio.gather(*[_detect_page(p) for p in candidates])
+
+    toc_pages: list[PageContent] = []
+    has_page_numbers = False
+
+    for page, result in results:
         if result.has_toc:
             toc_pages.append(page)
             if result.has_page_numbers:
@@ -114,7 +118,13 @@ async def find_section_starts(
     """
     from x64rag.retrieval.baml.baml_client.async_client import b
 
-    pages_text = "\n".join(f"--- Page {page.index} ---\n{page.text}" for page in pages)
+    # Build pages text in groups to avoid sending entire document per call.
+    # Each group covers ~50 pages, which keeps context manageable.
+    group_size = 50
+    page_groups: list[str] = []
+    for i in range(0, len(pages), group_size):
+        group = pages[i : i + group_size]
+        page_groups.append("\n".join(f"--- Page {page.index} ---\n{page.text}" for page in group))
 
     updated: list[dict[str, Any]] = []
     for entry in entries:
@@ -122,11 +132,16 @@ async def find_section_starts(
             updated.append(entry)
             continue
 
-        page_num = await b.FindSectionStart(
-            section_title=entry["title"],
-            pages_text=pages_text,
-            baml_options={"client_registry": registry},
-        )
+        # Search groups sequentially until we find the section
+        page_num = None
+        for group_text in page_groups:
+            page_num = await b.FindSectionStart(
+                section_title=entry["title"],
+                pages_text=group_text,
+                baml_options={"client_registry": registry},
+            )
+            if page_num is not None and page_num > 0:
+                break
 
         updated.append(
             {
@@ -134,7 +149,7 @@ async def find_section_starts(
                 "page": page_num,
             }
         )
-        logger.debug("found start for '%s' at page %d", entry["title"], page_num)
+        logger.debug("found start for '%s' at page %s", entry["title"], page_num)
 
     return updated
 

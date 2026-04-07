@@ -137,6 +137,22 @@ class TreeNode:
 
 
 @dataclass
+class TreePage:
+    """A page stored alongside the tree index for query-time retrieval."""
+
+    index: int
+    text: str
+    token_count: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"index": self.index, "text": self.text, "token_count": self.token_count}
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TreePage:
+        return cls(index=data["index"], text=data["text"], token_count=data["token_count"])
+
+
+@dataclass
 class TreeIndex:
     """Complete tree index for a document."""
 
@@ -146,6 +162,7 @@ class TreeIndex:
     structure: list[TreeNode]
     page_count: int
     created_at: datetime
+    pages: list[TreePage] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -155,6 +172,7 @@ class TreeIndex:
             "structure": [n.to_dict() for n in self.structure],
             "page_count": self.page_count,
             "created_at": self.created_at.isoformat(),
+            "pages": [p.to_dict() for p in self.pages],
         }
 
     @classmethod
@@ -166,6 +184,7 @@ class TreeIndex:
             structure=[TreeNode.from_dict(n) for n in data["structure"]],
             page_count=data["page_count"],
             created_at=datetime.fromisoformat(data["created_at"]),
+            pages=[TreePage.from_dict(p) for p in data.get("pages", [])],
         )
 
 

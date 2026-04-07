@@ -25,7 +25,8 @@ def parse_page_ranges(pages_str: str) -> list[int]:
             start_str, end_str = part.split("-", 1)
             start = int(start_str.strip())
             end = int(end_str.strip())
-            result.update(range(start, end + 1))
+            if end >= start:
+                result.update(range(start, end + 1))
         else:
             result.add(int(part))
     return sorted(result)
