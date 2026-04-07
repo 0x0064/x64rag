@@ -17,9 +17,11 @@ class DocumentRetrieval:
         self,
         document_store: BaseDocumentStore,
         weight: float = 1.0,
+        top_k: int | None = None,
     ) -> None:
         self._store = document_store
         self._weight = weight
+        self._top_k = top_k
 
     @property
     def name(self) -> str:
@@ -28,6 +30,10 @@ class DocumentRetrieval:
     @property
     def weight(self) -> float:
         return self._weight
+
+    @property
+    def top_k(self) -> int | None:
+        return self._top_k
 
     async def search(
         self,

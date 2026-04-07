@@ -41,6 +41,7 @@ class VectorRetrieval:
         bm25_enabled: bool = False,
         bm25_max_indexes: int = 16,
         weight: float = 1.0,
+        top_k: int | None = None,
     ) -> None:
         self._store = vector_store
         self._embeddings = embeddings
@@ -49,6 +50,7 @@ class VectorRetrieval:
         self._bm25_enabled = bm25_enabled
         self._bm25_max_indexes = bm25_max_indexes
         self._weight = weight
+        self._top_k = top_k
         self._bm25_cache: dict[str, _BM25Entry] = {}
         self._bm25_lock = asyncio.Lock()
 
@@ -59,6 +61,10 @@ class VectorRetrieval:
     @property
     def weight(self) -> float:
         return self._weight
+
+    @property
+    def top_k(self) -> int | None:
+        return self._top_k
 
     async def search(
         self,

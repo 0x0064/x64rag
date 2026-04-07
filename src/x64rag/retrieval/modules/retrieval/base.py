@@ -15,6 +15,9 @@ class BaseRetrievalMethod(Protocol):
     @property
     def weight(self) -> float: ...
 
+    @property
+    def top_k(self) -> int | None: ...
+
     async def search(
         self,
         query: str,

@@ -18,9 +18,11 @@ class GraphRetrieval:
         self,
         graph_store: BaseGraphStore,
         weight: float = 1.0,
+        top_k: int | None = None,
     ) -> None:
         self._store = graph_store
         self._weight = weight
+        self._top_k = top_k
 
     @property
     def name(self) -> str:
@@ -29,6 +31,10 @@ class GraphRetrieval:
     @property
     def weight(self) -> float:
         return self._weight
+
+    @property
+    def top_k(self) -> int | None:
+        return self._top_k
 
     async def search(
         self,
