@@ -644,6 +644,7 @@ class RagServer:
         history: list[tuple[str, str]] | None = None,
         min_score: float | None = None,
         collection: str | None = None,
+        system_prompt: str | None = None,
     ) -> QueryResult:
         """Full pipeline: retrieval + grounding + LLM generation."""
         self._check_initialized()
@@ -651,7 +652,9 @@ class RagServer:
             raise RuntimeError("query() requires generation to be configured")
 
         chunks = await self._retrieve_chunks(text, knowledge_id, history, min_score, collection)
-        return await self._generation_service.generate(query=text, chunks=chunks, history=history)
+        return await self._generation_service.generate(
+            query=text, chunks=chunks, history=history, system_prompt=system_prompt
+        )
 
     async def query_stream(
         self,
@@ -660,6 +663,7 @@ class RagServer:
         history: list[tuple[str, str]] | None = None,
         min_score: float | None = None,
         collection: str | None = None,
+        system_prompt: str | None = None,
     ) -> AsyncIterator[StreamEvent]:
         """Full pipeline with streaming: retrieval + grounding + streamed LLM generation."""
         self._check_initialized()
@@ -667,7 +671,9 @@ class RagServer:
             raise RuntimeError("query_stream() requires generation to be configured")
 
         chunks = await self._retrieve_chunks(text, knowledge_id, history, min_score, collection)
-        async for event in self._generation_service.generate_stream(query=text, chunks=chunks, history=history):
+        async for event in self._generation_service.generate_stream(
+            query=text, chunks=chunks, history=history, system_prompt=system_prompt
+        ):
             yield event
 
     async def retrieve(

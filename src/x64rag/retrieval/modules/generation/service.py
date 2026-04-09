@@ -108,6 +108,7 @@ class GenerationService:
         query: str,
         chunks: list[RetrievedChunk],
         history: list[tuple[str, str]] | None = None,
+        system_prompt: str | None = None,
     ) -> QueryResult:
         """Run grounding gates then generate a response via BAML GenerateAnswer."""
         if not query or not query.strip():
@@ -126,12 +127,13 @@ class GenerationService:
 
         context = chunks_to_context(relevant_chunks)
         formatted_history = self._format_history(history)
+        active_system_prompt = system_prompt if system_prompt is not None else self._system_prompt
 
         logger.info("LLM generation: %d context chunks", len(relevant_chunks))
         try:
             registry = build_registry(self._lm_config)
             answer = await b.GenerateAnswer(
-                system_prompt=self._system_prompt,
+                system_prompt=active_system_prompt,
                 context=context,
                 query=query,
                 history=formatted_history,
@@ -157,6 +159,7 @@ class GenerationService:
         query: str,
         chunks: list[RetrievedChunk],
         history: list[tuple[str, str]] | None = None,
+        system_prompt: str | None = None,
     ) -> AsyncIterator[StreamEvent]:
         """Run grounding gates then stream a response via BAML GenerateAnswer."""
         if not query or not query.strip():
@@ -183,12 +186,13 @@ class GenerationService:
 
         context = chunks_to_context(relevant_chunks)
         formatted_history = self._format_history(history)
+        active_system_prompt = system_prompt if system_prompt is not None else self._system_prompt
 
         logger.info("LLM streaming: %d context chunks", len(relevant_chunks))
         try:
             registry = build_registry(self._lm_config)
             stream = b.stream.GenerateAnswer(
-                system_prompt=self._system_prompt,
+                system_prompt=active_system_prompt,
                 context=context,
                 query=query,
                 history=formatted_history,
