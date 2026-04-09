@@ -1,4 +1,6 @@
-<img width="1536" height="480" alt="x64rag-ember(2)" src="https://github.com/user-attachments/assets/ce3262aa-7453-48d4-992d-94a6a5dedd2a" />
+<img width="200" alt="x64rag-ember(2)" src="https://github.com/user-attachments/assets/ce3262aa-7453-48d4-992d-94a6a5dedd2a" />
+
+Retrieval / Reasoning Augmented Generation (RAG) Python SDK
 
 ## Retrieval-Augmented Generation
 
