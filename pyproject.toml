@@ -1,12 +1,12 @@
 [project]
 name = "x64rag"
 version = "0.1.0"
-description = "Dual-SDK Python package for AI retrieval and reasoning pipelines"
+description = "Retrieval / Reasoning Augmented Generation (RAG) Python SDK"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.12"
 authors = [
-    {name = "0x0064", email = "frndvrgs@gmail.com"},
+    {name = "0x0064", email = "user.frndvrgs@gmail.com"},
 ]
 
 dependencies = [
