@@ -209,7 +209,12 @@ async def test_custom_bm25_tokenizer():
             VectorResult(
                 point_id="p1",
                 score=0.9,
-                payload={"content": "part 1756-EN2T specs", "source_id": "s1", "chunk_type": "child", "parent_id": None},
+                payload={
+                    "content": "part 1756-EN2T specs",
+                    "source_id": "s1",
+                    "chunk_type": "child",
+                    "parent_id": None,
+                },
             ),
         ]
     )

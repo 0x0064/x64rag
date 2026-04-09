@@ -12,4 +12,4 @@ htmlcov/
 .coverage
 .claude
 .codex
-docs/plans
+/docs/plans
