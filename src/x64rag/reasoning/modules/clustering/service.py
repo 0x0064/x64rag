@@ -10,7 +10,7 @@ from x64rag.reasoning.common.logging import get_logger
 from x64rag.reasoning.modules.clustering.algorithms import run_clustering
 from x64rag.reasoning.modules.clustering.labeling import generate_cluster_labels
 from x64rag.reasoning.modules.clustering.models import Cluster, ClusteringConfig, ClusteringResult, TextWithMetadata
-from x64rag.reasoning.protocols import BaseEmbeddings, BaseVectorStore
+from x64rag.reasoning.protocols import BaseEmbeddings, BaseSemanticIndex
 
 logger = get_logger("clustering")
 
@@ -57,7 +57,7 @@ class ClusteringService:
 
     async def cluster_knowledge(
         self,
-        vector_store: BaseVectorStore,
+        vector_store: BaseSemanticIndex,
         knowledge_id: str,
         config: ClusteringConfig | None = None,
     ) -> ClusteringResult:

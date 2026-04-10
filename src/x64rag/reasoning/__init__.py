@@ -57,7 +57,7 @@ from x64rag.reasoning.modules.pipeline.models import PipelineResult as PipelineR
 from x64rag.reasoning.modules.pipeline.models import PipelineServices as PipelineServices
 from x64rag.reasoning.modules.pipeline.service import Pipeline as Pipeline
 from x64rag.reasoning.protocols import BaseEmbeddings as BaseEmbeddings
-from x64rag.reasoning.protocols import BaseVectorStore as BaseVectorStore
+from x64rag.reasoning.protocols import BaseSemanticIndex as BaseSemanticIndex
 
 __all__ = [
     "AceError",
@@ -70,7 +70,7 @@ __all__ = [
     "LanguageModelClient",
     "LanguageModelProvider",
     "BaseEmbeddings",
-    "BaseVectorStore",
+    "BaseSemanticIndex",
     "AnalysisConfig",
     "AnalysisResult",
     "AnalysisService",

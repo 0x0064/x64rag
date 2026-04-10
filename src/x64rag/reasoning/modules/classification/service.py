@@ -18,7 +18,7 @@ from x64rag.reasoning.modules.classification.strategies import (
     llm_classify,
     llm_classify_sets,
 )
-from x64rag.reasoning.protocols import BaseEmbeddings, BaseVectorStore
+from x64rag.reasoning.protocols import BaseEmbeddings, BaseSemanticIndex
 
 
 class ClassificationService:
@@ -28,7 +28,7 @@ class ClassificationService:
         self,
         embeddings: BaseEmbeddings | None = None,
         lm_config: LanguageModelClient | None = None,
-        vector_store: BaseVectorStore | None = None,
+        vector_store: BaseSemanticIndex | None = None,
     ) -> None:
         self._embeddings = embeddings
         self._registry = build_registry(lm_config) if lm_config else None

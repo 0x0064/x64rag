@@ -1,10 +1,1 @@
-from typing import Protocol
-
-
-class BaseEmbeddings(Protocol):
-    @property
-    def model(self) -> str: ...
-
-    async def embed(self, texts: list[str]) -> list[list[float]]: ...
-
-    async def embedding_dimension(self) -> int: ...
+from x64rag.common.protocols import BaseEmbeddings as BaseEmbeddings

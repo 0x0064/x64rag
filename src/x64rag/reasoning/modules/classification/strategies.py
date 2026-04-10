@@ -8,7 +8,7 @@ from x64rag.reasoning.baml.baml_client.async_client import b
 from x64rag.reasoning.common.errors import ClassificationError
 from x64rag.reasoning.common.logging import get_logger
 from x64rag.reasoning.modules.classification.models import CategoryDefinition, Classification
-from x64rag.reasoning.protocols import BaseEmbeddings, BaseVectorStore
+from x64rag.reasoning.protocols import BaseEmbeddings, BaseSemanticIndex
 
 logger = get_logger("classification")
 
@@ -68,7 +68,7 @@ async def llm_classify(
 async def knn_classify(
     text: str,
     embeddings: BaseEmbeddings,
-    vector_store: BaseVectorStore,
+    vector_store: BaseSemanticIndex,
     top_k: int,
     knowledge_id: str,
     label_field: str,
@@ -84,7 +84,7 @@ async def knn_classify(
 
 async def knn_classify_with_vector(
     vector: list[float],
-    vector_store: BaseVectorStore,
+    vector_store: BaseSemanticIndex,
     top_k: int,
     knowledge_id: str,
     label_field: str,
