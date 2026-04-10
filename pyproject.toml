@@ -84,10 +84,10 @@ check = "ruff check ."
 typecheck = "mypy src/"
 test = "pytest"
 "test:cov" = "pytest --cov=x64rag --cov-report=term-missing"
-"baml:generate:retrieval" = "baml-cli generate --from src/x64rag/retrieval/baml_src"
-"baml:generate:reasoning" = "baml-cli generate --from src/x64rag/reasoning/baml_src"
-"baml:test:retrieval" = "baml test --from src/x64rag/retrieval/baml_src"
-"baml:test:reasoning" = "baml test --from src/x64rag/reasoning/baml_src"
+"baml:generate:retrieval" = "baml-cli generate --from src/x64rag/retrieval/baml/baml_src"
+"baml:generate:reasoning" = "baml-cli generate --from src/x64rag/reasoning/baml/baml_src"
+"baml:test:retrieval" = "baml test --from src/x64rag/retrieval/baml/baml_src"
+"baml:test:reasoning" = "baml test --from src/x64rag/reasoning/baml/baml_src"
 
 [build-system]
 requires = ["hatchling"]
