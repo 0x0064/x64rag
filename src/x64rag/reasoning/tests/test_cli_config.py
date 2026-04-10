@@ -80,29 +80,6 @@ class TestLoadConfig:
         with pytest.raises(ConfigError, match="Unknown language model"):
             build_lm_config(toml)
 
-    def test_env_var_overrides_provider(self, tmp_path):
-        config = tmp_path / "config.toml"
-        config.write_text('[language_model]\nprovider = "anthropic"\nmodel = "claude-sonnet-4-20250514"\n')
-        env = tmp_path / ".env"
-        env.write_text("")
-
-        with patch.dict(os.environ, {"X64RAG_PROVIDER": "openai", "OPENAI_API_KEY": "sk-test"}, clear=False):
-            toml = load_config(str(config))
-            lm_config = build_lm_config(toml)
-            assert lm_config.provider.provider == "openai"
-
-    def test_env_var_overrides_api_key(self, tmp_path):
-        config = tmp_path / "config.toml"
-        config.write_text('[language_model]\nprovider = "anthropic"\n')
-        env = tmp_path / ".env"
-        env.write_text("")
-
-        with patch.dict(os.environ, {"X64RAG_API_KEY": "sk-override"}, clear=False):
-            os.environ.pop("ANTHROPIC_API_KEY", None)
-            toml = load_config(str(config))
-            lm_config = build_lm_config(toml)
-            assert lm_config.provider.api_key == "sk-override"
-
     def test_fallback_config(self, tmp_path):
         config = tmp_path / "config.toml"
         config.write_text(

@@ -42,11 +42,8 @@ def _build_lm_provider(cfg: dict[str, Any]) -> LanguageModelProvider:
     if env_var is None:
         raise ConfigError(f"Unknown language model provider: {provider!r}. Supported: {', '.join(_LM_API_KEYS)}")
 
-    api_key_override = os.environ.get("X64RAG_API_KEY")
-    api_key = api_key_override or _get_api_key(env_var, provider)
-
-    model_override = os.environ.get("X64RAG_MODEL")
-    model = model_override or cfg.get("model", _LM_DEFAULTS[provider])
+    api_key = _get_api_key(env_var, provider)
+    model = cfg.get("model", _LM_DEFAULTS[provider])
 
     return LanguageModelProvider(
         provider=provider,
@@ -60,10 +57,6 @@ def build_lm_config(toml: dict[str, Any]) -> LanguageModelClient:
     lm_cfg = toml.get("language_model", {})
     if not lm_cfg:
         raise ConfigError("[language_model] section required in config.toml")
-
-    provider_override = os.environ.get("X64RAG_PROVIDER")
-    if provider_override:
-        lm_cfg = {**lm_cfg, "provider": provider_override}
 
     primary_provider = _build_lm_provider(lm_cfg)
 
