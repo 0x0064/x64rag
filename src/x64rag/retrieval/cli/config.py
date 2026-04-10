@@ -11,8 +11,7 @@ from x64rag.retrieval.modules.ingestion.embeddings.base import BaseEmbeddings
 from x64rag.retrieval.modules.ingestion.embeddings.facade import Embeddings
 from x64rag.retrieval.modules.ingestion.embeddings.sparse.fastembed import FastEmbedSparseEmbeddings
 from x64rag.retrieval.modules.ingestion.vision.facade import Vision
-from x64rag.retrieval.modules.retrieval.search.reranking.cohere import CohereReranking
-from x64rag.retrieval.modules.retrieval.search.reranking.voyage import VoyageReranking
+from x64rag.retrieval.modules.retrieval.search.reranking.facade import Reranking
 from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewriter
 from x64rag.retrieval.modules.retrieval.search.rewriting.multi_query import MultiQueryRewriter
 from x64rag.retrieval.modules.retrieval.search.rewriting.step_back import StepBackRewriter
@@ -115,9 +114,7 @@ def _build_reranker(cfg: dict[str, Any]):
     api_key = _get_api_key(env_var, provider)
     model = cfg.get("reranker_model", _RERANKER_DEFAULTS[provider])
 
-    if provider == "voyage":
-        return VoyageReranking(api_key=api_key, model=model)
-    return CohereReranking(api_key=api_key, model=model)
+    return Reranking(LanguageModelProvider(provider=provider, model=model, api_key=api_key))
 
 
 def _build_query_rewriter(cfg: dict[str, Any]):

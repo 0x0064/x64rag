@@ -9,7 +9,7 @@ from x64rag.retrieval.common.models import RetrievedChunk
 logger = get_logger(__name__)
 
 
-class LLMReranking:
+class _LLMReranking:
     def __init__(self, lm_config: LanguageModelClient) -> None:
         self._registry = build_registry(lm_config)
 

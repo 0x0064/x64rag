@@ -62,8 +62,8 @@ from x64rag.retrieval.modules.retrieval.methods.vector import VectorRetrieval as
 from x64rag.retrieval.modules.retrieval.refinement.abstractive import AbstractiveRefiner as AbstractiveRefiner
 from x64rag.retrieval.modules.retrieval.refinement.base import BaseChunkRefiner as BaseChunkRefiner
 from x64rag.retrieval.modules.retrieval.refinement.extractive import ExtractiveRefiner as ExtractiveRefiner
-from x64rag.retrieval.modules.retrieval.search.reranking.cohere import CohereReranking as CohereReranking
-from x64rag.retrieval.modules.retrieval.search.reranking.voyage import VoyageReranking as VoyageReranking
+from x64rag.retrieval.modules.retrieval.search.reranking.base import BaseReranking as BaseReranking
+from x64rag.retrieval.modules.retrieval.search.reranking.facade import Reranking as Reranking
 from x64rag.retrieval.modules.retrieval.search.rewriting.base import BaseQueryRewriter as BaseQueryRewriter
 from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewriter as HyDeRewriter
 from x64rag.retrieval.modules.retrieval.search.rewriting.multi_query import MultiQueryRewriter as MultiQueryRewriter
@@ -129,8 +129,8 @@ __all__ = [
     "Vision",
     "LanguageModelClient",
     "LanguageModelProvider",
-    "CohereReranking",
-    "VoyageReranking",
+    "Reranking",
+    "BaseReranking",
     "BaseQueryRewriter",
     "HyDeRewriter",
     "MultiQueryRewriter",

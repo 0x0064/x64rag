@@ -4,16 +4,17 @@ from functools import partial
 
 import voyageai
 
+from x64rag.retrieval.common.language_model import LanguageModelProvider
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.common.models import RetrievedChunk
 
 logger = get_logger(__name__)
 
 
-class VoyageReranking:
-    def __init__(self, api_key: str, model: str = "rerank-2.5") -> None:
-        self._client = voyageai.Client(api_key=api_key)
-        self._model = model
+class _VoyageReranking:
+    def __init__(self, provider: LanguageModelProvider) -> None:
+        self._client = voyageai.Client(api_key=provider.api_key)
+        self._model = provider.model
 
     async def rerank(self, query: str, results: list[RetrievedChunk], top_k: int = 5) -> list[RetrievedChunk]:
         if not results:

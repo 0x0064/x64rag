@@ -2,16 +2,17 @@ from dataclasses import replace
 
 import cohere
 
+from x64rag.retrieval.common.language_model import LanguageModelProvider
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.common.models import RetrievedChunk
 
 logger = get_logger(__name__)
 
 
-class CohereReranking:
-    def __init__(self, api_key: str, model: str = "rerank-english-v3.0") -> None:
-        self._client = cohere.AsyncClientV2(api_key=api_key)
-        self._model = model
+class _CohereReranking:
+    def __init__(self, provider: LanguageModelProvider) -> None:
+        self._client = cohere.AsyncClientV2(api_key=provider.api_key)
+        self._model = provider.model
 
     async def rerank(self, query: str, results: list[RetrievedChunk], top_k: int = 5) -> list[RetrievedChunk]:
         if not results:
