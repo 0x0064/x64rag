@@ -31,7 +31,7 @@ from x64rag.retrieval import Embeddings
 embeddings = Embeddings(
     LanguageModelProvider(provider="openai", model="text-embedding-3-small", api_key="your_api_key")
 )
-lm_config = LanguageModelClient(
+lm_client = LanguageModelClient(
     provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="your_api_key")
 )
 
@@ -51,7 +51,7 @@ async def main():
         "I don't want this anymore, cancel it.",
     ]
 
-    clustering = ClusteringService(embeddings=embeddings, lm_config=lm_config)
+    clustering = ClusteringService(embeddings=embeddings, lm_client=lm_client)
     clustering_result = await clustering.cluster_texts(
         texts=emails,
         config=ClusteringConfig(algorithm="kmeans", n_clusters=3, generate_labels=True),
@@ -63,7 +63,7 @@ async def main():
 
     # 2. Analysis — extract structured insights with consumer-defined dimensions
 
-    analyzer = AnalysisService(lm_config=lm_config)
+    analyzer = AnalysisService(lm_client=lm_client)
     analysis = await analyzer.analyze(
         "My order FB-12345 hasn't arrived and I need it by Friday. This is the second time.",
         config=AnalysisConfig(
@@ -93,7 +93,7 @@ async def main():
 
     # 3. Classification — single-set and multi-set
 
-    classifier = ClassificationService(lm_config=lm_config)
+    classifier = ClassificationService(lm_client=lm_client)
 
     single = await classifier.classify(
         "I want to return this product for a refund",
@@ -130,7 +130,7 @@ async def main():
 
     # 4. Compliance — check response against policy
 
-    compliance = ComplianceService(lm_config=lm_config)
+    compliance = ComplianceService(lm_client=lm_client)
     check = await compliance.check(
         text="We've processed your full refund. It will appear in 3-5 business days.",
         reference=(
@@ -152,7 +152,7 @@ async def main():
 
     # 5. Evaluation — score generated output quality
 
-    evaluator = EvaluationService(embeddings=embeddings, lm_config=lm_config)
+    evaluator = EvaluationService(embeddings=embeddings, lm_client=lm_client)
     evaluation = await evaluator.evaluate(
         EvaluationPair(
             generated="We've processed your full refund. It will appear in 3-5 business days.",

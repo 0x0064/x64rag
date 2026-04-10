@@ -29,14 +29,14 @@ embeddings = Embeddings(
     LanguageModelProvider(provider="openai", model="text-embedding-3-small", api_key="your_api_key")
 )
 vector_store = QdrantVectorStore(url="http://localhost:6333", collection="manufacturing-qa")
-lm_config = LanguageModelClient(
+lm_client = LanguageModelClient(
     provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="your_api_key")
 )
 
-clustering = ClusteringService(embeddings=embeddings, lm_config=lm_config)
-classifier = ClassificationService(lm_config=lm_config)
-evaluator = EvaluationService(embeddings=embeddings, lm_config=lm_config)
-compliance = ComplianceService(lm_config=lm_config)
+clustering = ClusteringService(embeddings=embeddings, lm_client=lm_client)
+classifier = ClassificationService(lm_client=lm_client)
+evaluator = EvaluationService(embeddings=embeddings, lm_client=lm_client)
+compliance = ComplianceService(lm_client=lm_client)
 
 DEFECT_REPORTS = [
     "Pleats not evenly spaced on 20x25x1 filters. Gap exceeds 2mm tolerance.",
@@ -80,7 +80,7 @@ rag_config = RagServerConfig(
     persistence=PersistenceConfig(vector_store=vector_store),
     ingestion=IngestionConfig(embeddings=embeddings),
     generation=GenerationConfig(
-        lm_config=LanguageModelClient(
+        lm_client=LanguageModelClient(
             provider=LanguageModelProvider(
                 provider="anthropic",
                 model="claude-sonnet-4-20250514",

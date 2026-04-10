@@ -41,7 +41,7 @@ config = RagServerConfig(
     retrieval=RetrievalConfig(
         reranker=Reranking(LanguageModelProvider(provider="cohere", model="rerank-v3.5", api_key="your_api_key")),
         query_rewriter=HyDeRewriting(
-            lm_config=LanguageModelClient(
+            lm_client=LanguageModelClient(
                 provider=LanguageModelProvider(
                     provider="anthropic",
                     model="claude-haiku-4-5-20251001",
@@ -53,7 +53,7 @@ config = RagServerConfig(
         source_type_weights={"manual": 1.0, "drawing": 0.9, "transcript": 0.5, "community": 0.8},
     ),
     generation=GenerationConfig(
-        lm_config=LanguageModelClient(
+        lm_client=LanguageModelClient(
             provider=LanguageModelProvider(
                 provider="anthropic", model="claude-sonnet-4-20250514", api_key="your_api_key"
             ),

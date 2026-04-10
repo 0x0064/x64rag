@@ -63,7 +63,7 @@ lm = LanguageModelClient(
     provider=LanguageModelProvider(provider="anthropic", model="claude-sonnet-4-20250514", api_key="..."),
 )
 
-analyzer = AnalysisService(lm_config=lm)
+analyzer = AnalysisService(lm_client=lm)
 result = await analyzer.analyze(
     "My order FB-12345 hasn't arrived and I need it by Friday.",
     config=AnalysisConfig(

@@ -36,19 +36,19 @@ embeddings = Embeddings(
     LanguageModelProvider(provider="openai", model="text-embedding-3-small", api_key="your_api_key")
 )
 vector_store = QdrantVectorStore(url="http://localhost:6333", collection="product-knowledge")
-lm_config = LanguageModelClient(
+lm_client = LanguageModelClient(
     provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="your_api_key")
 )
 
 intake_pipeline = Pipeline(
     services=PipelineServices(
-        analysis=AnalysisService(lm_config=lm_config),
-        classification=ClassificationService(lm_config=lm_config),
+        analysis=AnalysisService(lm_client=lm_client),
+        classification=ClassificationService(lm_client=lm_client),
     )
 )
 
-compliance = ComplianceService(lm_config=lm_config)
-evaluator = EvaluationService(embeddings=embeddings, lm_config=lm_config)
+compliance = ComplianceService(lm_client=lm_client)
+evaluator = EvaluationService(embeddings=embeddings, lm_client=lm_client)
 
 ROUTING_CATEGORIES = [
     CategoryDefinition(name="SILENT", description="No action needed, normal conversation"),
@@ -74,7 +74,7 @@ rag_config = RagServerConfig(
     ingestion=IngestionConfig(embeddings=embeddings),
     retrieval=RetrievalConfig(top_k=5),
     generation=GenerationConfig(
-        lm_config=LanguageModelClient(
+        lm_client=LanguageModelClient(
             provider=LanguageModelProvider(
                 provider="anthropic",
                 model="claude-sonnet-4-20250514",

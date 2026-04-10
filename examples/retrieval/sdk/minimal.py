@@ -22,7 +22,7 @@ config = RagServerConfig(
         ),
     ),
     generation=GenerationConfig(
-        lm_config=LanguageModelClient(
+        lm_client=LanguageModelClient(
             provider=LanguageModelProvider(
                 provider="anthropic", model="claude-sonnet-4-20250514", api_key="your_api_key"
             ),

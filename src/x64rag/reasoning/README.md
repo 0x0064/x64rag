@@ -19,11 +19,11 @@ from x64rag.reasoning import (
     LanguageModelClient, LanguageModelProvider,
 )
 
-lm_config = LanguageModelClient(
+lm_client = LanguageModelClient(
     provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="...")
 )
 
-analyzer = AnalysisService(lm_config=lm_config)
+analyzer = AnalysisService(lm_client=lm_client)
 
 result = await analyzer.analyze(
     "My order FB-12345 hasn't arrived and I need it by Friday. This is the second time.",
@@ -81,7 +81,7 @@ Classify text using LLM reasoning, or a hybrid strategy that tries kNN first and
 ```python
 from x64rag.reasoning import ClassificationService, ClassificationConfig, CategoryDefinition
 
-classifier = ClassificationService(lm_config=lm_config)
+classifier = ClassificationService(lm_client=lm_client)
 
 categories = [
     CategoryDefinition(name="refund", description="Customer wants money back", examples=["I want a refund"]),
@@ -127,7 +127,7 @@ Hybrid strategy (kNN → LLM escalation):
 ```python
 classifier = ClassificationService(
     embeddings=embeddings,
-    lm_config=lm_config,
+    lm_client=lm_client,
     vector_store=vector_store,
 )
 
@@ -149,7 +149,7 @@ Discover latent categories in a text corpus using embedding-based clustering. Su
 ```python
 from x64rag.reasoning import ClusteringService, ClusteringConfig
 
-clustering = ClusteringService(embeddings=embeddings, lm_config=lm_config)
+clustering = ClusteringService(embeddings=embeddings, lm_client=lm_client)
 
 result = await clustering.cluster_texts(
     texts=["..."] * 1000,
@@ -167,7 +167,7 @@ Check text against reference policies for violations. Returns a compliant/non-co
 ```python
 from x64rag.reasoning import ComplianceService, ComplianceConfig, ComplianceDimensionDefinition
 
-compliance = ComplianceService(lm_config=lm_config)
+compliance = ComplianceService(lm_client=lm_client)
 
 result = await compliance.check(
     text="We'll give you a 150% refund plus free shipping forever!",
@@ -203,7 +203,7 @@ Score generated outputs against reference texts using embedding similarity and/o
 ```python
 from x64rag.reasoning import EvaluationService, EvaluationConfig, EvaluationPair, EvaluationDimensionDefinition
 
-evaluator = EvaluationService(embeddings=embeddings, lm_config=lm_config)
+evaluator = EvaluationService(embeddings=embeddings, lm_client=lm_client)
 
 pair = EvaluationPair(
     generated="We've processed your refund. You'll see the credit in 3-5 business days.",
@@ -253,9 +253,9 @@ from x64rag.reasoning import (
 
 pipeline = Pipeline(
     services=PipelineServices(
-        analysis=AnalysisService(lm_config=lm_config),
-        classification=ClassificationService(lm_config=lm_config),
-        compliance=ComplianceService(lm_config=lm_config),
+        analysis=AnalysisService(lm_client=lm_client),
+        classification=ClassificationService(lm_client=lm_client),
+        compliance=ComplianceService(lm_client=lm_client),
     )
 )
 
@@ -351,7 +351,7 @@ x64rag reasoning analyze "text"
 
 ### `AnalysisService`
 
-Constructor: `AnalysisService(lm_config)`
+Constructor: `AnalysisService(lm_client)`
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -361,7 +361,7 @@ Constructor: `AnalysisService(lm_config)`
 
 ### `ClassificationService`
 
-Constructor: `ClassificationService(embeddings?, lm_config?, vector_store?)`
+Constructor: `ClassificationService(embeddings?, lm_client?, vector_store?)`
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -372,7 +372,7 @@ Constructor: `ClassificationService(embeddings?, lm_config?, vector_store?)`
 
 ### `ClusteringService`
 
-Constructor: `ClusteringService(embeddings, lm_config?)`
+Constructor: `ClusteringService(embeddings, lm_client?)`
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -381,7 +381,7 @@ Constructor: `ClusteringService(embeddings, lm_config?)`
 
 ### `ComplianceService`
 
-Constructor: `ComplianceService(lm_config)`
+Constructor: `ComplianceService(lm_client)`
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -390,7 +390,7 @@ Constructor: `ComplianceService(lm_config)`
 
 ### `EvaluationService`
 
-Constructor: `EvaluationService(embeddings?, lm_config?)`
+Constructor: `EvaluationService(embeddings?, lm_client?)`
 
 | Method | Returns | Description |
 |--------|---------|-------------|
@@ -443,7 +443,7 @@ Steps: `AnalyzeStep`, `ClassifyStep`, `EvaluateStep`, `ComplianceStep`
 | `n_clusters` | `int` | `10` | Number of clusters (kmeans only) |
 | `min_cluster_size` | `int` | `10` | Minimum cluster size (hdbscan only) |
 | `samples_per_cluster` | `int` | `5` | Sample texts per cluster |
-| `generate_labels` | `bool` | `False` | Generate LLM labels (requires `lm_config`) |
+| `generate_labels` | `bool` | `False` | Generate LLM labels (requires `lm_client`) |
 | `random_state` | `int` | `42` | Random seed |
 
 #### `ComplianceConfig`

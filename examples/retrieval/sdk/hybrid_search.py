@@ -29,7 +29,7 @@ config = RagServerConfig(
     ),
     retrieval=RetrievalConfig(
         query_rewriter=HyDeRewriting(
-            lm_config=LanguageModelClient(
+            lm_client=LanguageModelClient(
                 provider=LanguageModelProvider(
                     provider="anthropic",
                     model="claude-haiku-4-5-20251001",
@@ -40,7 +40,7 @@ config = RagServerConfig(
         top_k=5,
     ),
     generation=GenerationConfig(
-        lm_config=LanguageModelClient(
+        lm_client=LanguageModelClient(
             provider=LanguageModelProvider(
                 provider="anthropic", model="claude-sonnet-4-20250514", api_key="your_api_key"
             ),

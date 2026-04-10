@@ -9,11 +9,11 @@ from x64rag.reasoning import (
     LanguageModelProvider,
 )
 
-lm_config = LanguageModelClient(
+lm_client = LanguageModelClient(
     provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="your_api_key")
 )
 
-classifier = ClassificationService(lm_config=lm_config)
+classifier = ClassificationService(lm_client=lm_client)
 
 categories = [
     CategoryDefinition(name="refund", description="Customer wants money back"),

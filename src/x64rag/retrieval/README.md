@@ -46,16 +46,16 @@ config = RagServerConfig(
     retrieval=RetrievalConfig(
         top_k=5,
         reranker=Reranking(LanguageModelProvider(provider="cohere", model="rerank-v3.5", api_key="...")),
-        query_rewriter=HyDeRewriting(lm_config=rewriter_lm),
+        query_rewriter=HyDeRewriting(lm_client=rewriter_lm),
         source_type_weights={"manual": 1.0, "transcript": 0.5},
         parent_expansion=True,
         cross_reference_enrichment=True,
-        enrich_lm_config=LanguageModelClient(
+        enrich_lm_client=LanguageModelClient(
             provider=LanguageModelProvider(provider="openai", model="gpt-4o", api_key="..."),
         ),
     ),
     generation=GenerationConfig(
-        lm_config=LanguageModelClient(
+        lm_client=LanguageModelClient(
             provider=LanguageModelProvider(
                 provider="anthropic", model="claude-sonnet-4-20250514", api_key="...",
             ),
@@ -403,7 +403,7 @@ Async context manager: `async with RagServer(config) as rag:`
 | `parent_chunk_overlap` | `int` | `200` | Token overlap between parent chunks |
 | `contextual_chunking` | `bool` | `True` | Prepend document context to each chunk before embedding |
 | `sparse_embeddings` | `BaseSparseEmbeddings` | `None` | SPLADE sparse vectors for hybrid search |
-| `lm_config` | `LanguageModelClient` | `None` | LLM config for structured analysis |
+| `lm_client` | `LanguageModelClient` | `None` | LLM config for structured analysis |
 | `dpi` | `int` | `300` | PDF rendering resolution (analyze pipeline) |
 
 #### `RetrievalConfig`
@@ -417,21 +417,21 @@ Async context manager: `async with RagServer(config) as rag:`
 | `bm25_enabled` | `bool` | `False` | In-memory BM25 (deprecated when sparse_embeddings configured) |
 | `source_type_weights` | `dict[str, float]` | `None` | Score multipliers by source type |
 | `cross_reference_enrichment` | `bool` | `True` | Fetch cross-referenced pages (analyze pipeline) |
-| `enrich_lm_config` | `LanguageModelClient` | `None` | LLM for query analysis |
+| `enrich_lm_client` | `LanguageModelClient` | `None` | LLM for query analysis |
 | `chunk_refiner` | `BaseChunkRefinement` | `None` | Post-retrieval chunk refinement |
 
 #### `GenerationConfig`
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `lm_config` | `LanguageModelClient` | `None` | LLM config. Required for `query()` |
+| `lm_client` | `LanguageModelClient` | `None` | LLM config. Required for `query()` |
 | `system_prompt` | `str` | default | System prompt for generation |
 | `grounding_enabled` | `bool` | `False` | Score-based grounding gate |
 | `grounding_threshold` | `float` | `0.5` | Minimum retrieval score (0-1) |
 | `relevance_gate_enabled` | `bool` | `False` | LLM relevance gate (requires `grounding_enabled`) |
 | `relevance_gate_model` | `LanguageModelClient` | `None` | LLM for relevance judgment |
 | `guiding_enabled` | `bool` | `False` | Clarification questions (requires `relevance_gate_enabled`) |
-| `step_lm_config` | `LanguageModelClient` | `None` | LLM for step-by-step reasoning |
+| `step_lm_client` | `LanguageModelClient` | `None` | LLM for step-by-step reasoning |
 
 #### `TreeIndexingConfig`
 
