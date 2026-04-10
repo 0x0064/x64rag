@@ -10,8 +10,7 @@ from x64rag.retrieval.common.language_model import LanguageModelClient, Language
 from x64rag.retrieval.modules.ingestion.embeddings.base import BaseEmbeddings
 from x64rag.retrieval.modules.ingestion.embeddings.facade import Embeddings
 from x64rag.retrieval.modules.ingestion.embeddings.sparse.fastembed import FastEmbedSparseEmbeddings
-from x64rag.retrieval.modules.ingestion.vision.anthropic import AnthropicVision
-from x64rag.retrieval.modules.ingestion.vision.openai import OpenAIVision
+from x64rag.retrieval.modules.ingestion.vision.facade import Vision
 from x64rag.retrieval.modules.retrieval.search.reranking.cohere import CohereReranking
 from x64rag.retrieval.modules.retrieval.search.reranking.voyage import VoyageReranking
 from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewriter
@@ -92,9 +91,7 @@ def _build_vision(cfg: dict[str, Any]):
     api_key = _get_api_key(env_var, provider)
     model = cfg.get("vision_model", _VISION_DEFAULTS[provider])
 
-    if provider == "anthropic":
-        return AnthropicVision(api_key=api_key, model=model)
-    return OpenAIVision(api_key=api_key, model=model)
+    return Vision(LanguageModelProvider(provider=provider, model=model, api_key=api_key))
 
 
 _RERANKER_KEYS = {

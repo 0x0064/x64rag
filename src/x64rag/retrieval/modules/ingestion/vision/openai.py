@@ -3,6 +3,7 @@ from pathlib import Path
 
 from openai import AsyncOpenAI
 
+from x64rag.common.language_model import LanguageModelProvider
 from x64rag.retrieval.common.errors import ParseError
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.modules.ingestion.models import ParsedPage
@@ -15,10 +16,15 @@ from x64rag.retrieval.modules.ingestion.vision.constants import (
 logger = get_logger(__name__)
 
 
-class OpenAIVision:
-    def __init__(self, api_key: str, model: str = "gpt-4o", max_tokens: int = 4096, max_retries: int = 3) -> None:
-        self._client = AsyncOpenAI(api_key=api_key, max_retries=max_retries)
-        self._model = model
+class _OpenAIVision:
+    def __init__(
+        self,
+        provider: LanguageModelProvider,
+        max_tokens: int = 4096,
+        max_retries: int = 3,
+    ) -> None:
+        self._client = AsyncOpenAI(api_key=provider.api_key, max_retries=max_retries)
+        self._model = provider.model
         self._max_tokens = max_tokens
 
     async def parse(self, file_path: str, pages: set[int] | None = None) -> list[ParsedPage]:

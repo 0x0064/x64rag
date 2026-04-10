@@ -51,8 +51,7 @@ from x64rag.retrieval.modules.ingestion.methods.document import DocumentIngestio
 from x64rag.retrieval.modules.ingestion.methods.graph import GraphIngestion as GraphIngestion
 from x64rag.retrieval.modules.ingestion.methods.tree import TreeIngestion as TreeIngestion
 from x64rag.retrieval.modules.ingestion.methods.vector import VectorIngestion as VectorIngestion
-from x64rag.retrieval.modules.ingestion.vision.anthropic import AnthropicVision as AnthropicVision
-from x64rag.retrieval.modules.ingestion.vision.openai import OpenAIVision as OpenAIVision
+from x64rag.retrieval.modules.ingestion.vision.facade import Vision as Vision
 from x64rag.retrieval.modules.namespace import MethodNamespace as MethodNamespace
 from x64rag.retrieval.modules.retrieval.base import BaseRetrievalMethod as BaseRetrievalMethod
 from x64rag.retrieval.modules.retrieval.judging import BaseRetrievalJudge as BaseRetrievalJudge
@@ -127,8 +126,7 @@ __all__ = [
     "Embeddings",
     "BaseSparseEmbeddings",
     "FastEmbedSparseEmbeddings",
-    "AnthropicVision",
-    "OpenAIVision",
+    "Vision",
     "LanguageModelClient",
     "LanguageModelProvider",
     "CohereReranking",

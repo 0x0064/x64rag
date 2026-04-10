@@ -4,6 +4,7 @@ from pathlib import Path
 from anthropic import AsyncAnthropic
 from anthropic.types import Base64ImageSourceParam, ImageBlockParam, TextBlock, TextBlockParam
 
+from x64rag.common.language_model import LanguageModelProvider
 from x64rag.retrieval.common.errors import ParseError
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.modules.ingestion.models import ParsedPage
@@ -16,12 +17,15 @@ from x64rag.retrieval.modules.ingestion.vision.constants import (
 logger = get_logger(__name__)
 
 
-class AnthropicVision:
+class _AnthropicVision:
     def __init__(
-        self, api_key: str, model: str = "claude-sonnet-4-20250514", max_tokens: int = 4096, max_retries: int = 3
+        self,
+        provider: LanguageModelProvider,
+        max_tokens: int = 4096,
+        max_retries: int = 3,
     ) -> None:
-        self._client = AsyncAnthropic(api_key=api_key, max_retries=max_retries)
-        self._model = model
+        self._client = AsyncAnthropic(api_key=provider.api_key, max_retries=max_retries)
+        self._model = provider.model
         self._max_tokens = max_tokens
 
     async def parse(self, file_path: str, pages: set[int] | None = None) -> list[ParsedPage]:
