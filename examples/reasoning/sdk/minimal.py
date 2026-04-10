@@ -5,12 +5,12 @@ import asyncio
 from x64rag.reasoning import (
     CategoryDefinition,
     ClassificationService,
-    LanguageModelClientConfig,
-    LanguageModelConfig,
+    LanguageModelClient,
+    LanguageModelProvider,
 )
 
-lm_config = LanguageModelConfig(
-    client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini", api_key="your_api_key")
+lm_config = LanguageModelClient(
+    provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="your_api_key")
 )
 
 classifier = ClassificationService(lm_config=lm_config)

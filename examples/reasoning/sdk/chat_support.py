@@ -16,15 +16,15 @@ from x64rag.reasoning import (
     DimensionDefinition,
     EntityTypeDefinition,
     EvaluationService,
-    LanguageModelClientConfig,
-    LanguageModelConfig,
+    LanguageModelClient,
+    LanguageModelProvider,
     Pipeline,
     PipelineServices,
 )
 from x64rag.retrieval import (
+    Embeddings,
     GenerationConfig,
     IngestionConfig,
-    OpenAIEmbeddings,
     PersistenceConfig,
     QdrantVectorStore,
     RagServer,
@@ -32,10 +32,12 @@ from x64rag.retrieval import (
     RetrievalConfig,
 )
 
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small", api_key="your_api_key")
+embeddings = Embeddings(
+    LanguageModelProvider(provider="openai", model="text-embedding-3-small", api_key="your_api_key")
+)
 vector_store = QdrantVectorStore(url="http://localhost:6333", collection="product-knowledge")
-lm_config = LanguageModelConfig(
-    client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini", api_key="your_api_key")
+lm_config = LanguageModelClient(
+    provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="your_api_key")
 )
 
 intake_pipeline = Pipeline(
@@ -72,8 +74,8 @@ rag_config = RagServerConfig(
     ingestion=IngestionConfig(embeddings=embeddings),
     retrieval=RetrievalConfig(top_k=5),
     generation=GenerationConfig(
-        lm_config=LanguageModelConfig(
-            client=LanguageModelClientConfig(
+        lm_config=LanguageModelClient(
+            provider=LanguageModelProvider(
                 provider="anthropic",
                 model="claude-sonnet-4-20250514",
                 api_key="your_api_key",

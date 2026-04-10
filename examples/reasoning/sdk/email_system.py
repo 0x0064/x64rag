@@ -12,23 +12,25 @@ from x64rag.reasoning import (
     EvaluationDimensionDefinition,
     EvaluationPair,
     EvaluationService,
-    LanguageModelClientConfig,
-    LanguageModelConfig,
+    LanguageModelClient,
+    LanguageModelProvider,
 )
 from x64rag.retrieval import (
+    Embeddings,
     GenerationConfig,
     IngestionConfig,
-    OpenAIEmbeddings,
     PersistenceConfig,
     QdrantVectorStore,
     RagServer,
     RagServerConfig,
 )
 
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small", api_key="your_api_key")
+embeddings = Embeddings(
+    LanguageModelProvider(provider="openai", model="text-embedding-3-small", api_key="your_api_key")
+)
 vector_store = QdrantVectorStore(url="http://localhost:6333", collection="email-knowledge")
-lm_config = LanguageModelConfig(
-    client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini", api_key="your_api_key")
+lm_config = LanguageModelClient(
+    provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="your_api_key")
 )
 
 classifier = ClassificationService(lm_config=lm_config)
@@ -59,8 +61,8 @@ rag_config = RagServerConfig(
     persistence=PersistenceConfig(vector_store=vector_store),
     ingestion=IngestionConfig(embeddings=embeddings),
     generation=GenerationConfig(
-        lm_config=LanguageModelConfig(
-            client=LanguageModelClientConfig(
+        lm_config=LanguageModelClient(
+            provider=LanguageModelProvider(
                 provider="anthropic",
                 model="claude-sonnet-4-20250514",
                 api_key="your_api_key",

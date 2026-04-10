@@ -21,16 +21,18 @@ from x64rag.reasoning import (
     EvaluationDimensionDefinition,
     EvaluationPair,
     EvaluationService,
-    LanguageModelClientConfig,
-    LanguageModelConfig,
+    LanguageModelClient,
+    LanguageModelProvider,
     Pipeline,
     PipelineServices,
 )
-from x64rag.retrieval import OpenAIEmbeddings
+from x64rag.retrieval import Embeddings
 
-embeddings = OpenAIEmbeddings(model="text-embedding-3-small", api_key="your_api_key")
-lm_config = LanguageModelConfig(
-    client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini", api_key="your_api_key")
+embeddings = Embeddings(
+    LanguageModelProvider(provider="openai", model="text-embedding-3-small", api_key="your_api_key")
+)
+lm_config = LanguageModelClient(
+    provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="your_api_key")
 )
 
 
