@@ -135,7 +135,7 @@ class TestServerQueryStream:
     async def test_query_stream_yields_events(self):
         server = _make_server()
 
-        async def fake_stream(query, chunks, history):
+        async def fake_stream(query, chunks, history, system_prompt=None):
             yield StreamEvent(type="chunk", content="Hello")
             yield StreamEvent(type="sources", sources=[], grounded=True, confidence=0.9)
 
