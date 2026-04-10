@@ -71,6 +71,13 @@ def build_lm_config(toml: dict[str, Any]) -> LanguageModelClient:
     strategy: Literal["primary_only", "fallback"] = "primary_only"
     fallback_cfg = lm_cfg.get("fallback")
     if fallback_cfg:
+        for forbidden_key in ("max_tokens", "temperature"):
+            if forbidden_key in fallback_cfg:
+                raise ConfigError(
+                    f"[language_model.fallback] cannot set {forbidden_key!r}. "
+                    f"Generation parameters (max_tokens, temperature) now apply to both "
+                    f"primary and fallback — set them at the top-level [language_model] section."
+                )
         fallback_provider = _build_lm_provider(fallback_cfg)
         strategy = "fallback"
 

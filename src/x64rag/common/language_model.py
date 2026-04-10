@@ -30,7 +30,11 @@ class LanguageModelProvider:
 
 @dataclass
 class LanguageModelClient:
-    """BAML-backed LLM client: routing, retries, fallback, generation params."""
+    """BAML-backed LLM client: routing, retries, fallback, generation params.
+
+    max_tokens and temperature apply to both primary and fallback clients —
+    per-fallback overrides are intentionally not supported.
+    """
 
     provider: LanguageModelProvider
     fallback: LanguageModelProvider | None = None

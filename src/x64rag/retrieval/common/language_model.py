@@ -1,4 +1,4 @@
-"""Re-exports from shared common for backwards compatibility."""
+"""Re-exports from x64rag.common.language_model."""
 
 from x64rag.common.language_model import (
     LanguageModelClient as LanguageModelClient,
