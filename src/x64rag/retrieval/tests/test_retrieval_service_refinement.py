@@ -24,7 +24,7 @@ def _make_service(chunk_refiner=None, reranking=None):
     )
 
 
-class TestChunkRefinerWiring:
+class TestChunkRefinementWiring:
     async def test_refiner_called_after_reranking(self):
         refiner = AsyncMock()
         refiner.refine = AsyncMock(return_value=[_chunk("refined")])
