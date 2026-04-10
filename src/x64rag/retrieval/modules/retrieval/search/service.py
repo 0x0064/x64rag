@@ -4,7 +4,7 @@ from typing import Any
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.common.models import RetrievedChunk
 from x64rag.retrieval.modules.retrieval.base import BaseRetrievalMethod
-from x64rag.retrieval.modules.retrieval.refinement.base import BaseChunkRefiner
+from x64rag.retrieval.modules.retrieval.refinement.base import BaseChunkRefinement
 from x64rag.retrieval.modules.retrieval.search.fusion import reciprocal_rank_fusion
 from x64rag.retrieval.modules.retrieval.search.reranking.base import BaseReranking
 from x64rag.retrieval.modules.retrieval.search.rewriting.base import BaseQueryRewriter
@@ -20,7 +20,7 @@ class RetrievalService:
         top_k: int = 5,
         source_type_weights: dict[str, float] | None = None,
         query_rewriter: BaseQueryRewriter | None = None,
-        chunk_refiner: BaseChunkRefiner | None = None,
+        chunk_refiner: BaseChunkRefinement | None = None,
     ) -> None:
         self._retrieval_methods = retrieval_methods
         self._reranking = reranking

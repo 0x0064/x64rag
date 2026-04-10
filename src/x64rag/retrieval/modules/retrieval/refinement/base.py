@@ -3,7 +3,7 @@ from typing import Protocol
 from x64rag.retrieval.common.models import RetrievedChunk
 
 
-class BaseChunkRefiner(Protocol):
+class BaseChunkRefinement(Protocol):
     """Protocol for post-retrieval chunk refinement.
 
     Refiners take a query and retrieved chunks, and return refined chunks.

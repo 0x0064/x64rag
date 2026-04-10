@@ -12,7 +12,7 @@ logger = get_logger("retrieval/refinement/extractive")
 _SENTENCE_SPLIT = re.compile(r"(?<![A-Za-z]\.)(?<=[.!?])\s+")
 
 
-class ExtractiveRefiner:
+class ExtractiveRefinement:
     """Sentence-level extractive refinement via embedding similarity.
 
     Splits each chunk into sentences, embeds them alongside the query,

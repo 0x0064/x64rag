@@ -34,7 +34,7 @@ from x64rag.retrieval.modules.retrieval.enrich.service import StructuredRetrieva
 from x64rag.retrieval.modules.retrieval.methods.document import DocumentRetrieval
 from x64rag.retrieval.modules.retrieval.methods.graph import GraphRetrieval
 from x64rag.retrieval.modules.retrieval.methods.vector import VectorRetrieval
-from x64rag.retrieval.modules.retrieval.refinement.base import BaseChunkRefiner
+from x64rag.retrieval.modules.retrieval.refinement.base import BaseChunkRefinement
 from x64rag.retrieval.modules.retrieval.search.reranking.base import BaseReranking
 from x64rag.retrieval.modules.retrieval.search.rewriting.base import BaseQueryRewriter
 from x64rag.retrieval.modules.retrieval.search.service import RetrievalService
@@ -100,7 +100,7 @@ class RetrievalConfig:
     cross_reference_enrichment: bool = True
     enrich_lm_config: LanguageModelClient | None = None
     parent_expansion: bool = True
-    chunk_refiner: BaseChunkRefiner | None = None
+    chunk_refiner: BaseChunkRefinement | None = None
 
     def __post_init__(self) -> None:
         if self.top_k < 1:

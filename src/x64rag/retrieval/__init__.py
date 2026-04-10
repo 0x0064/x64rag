@@ -59,9 +59,9 @@ from x64rag.retrieval.modules.retrieval.judging import LLMRetrievalJudge as LLMR
 from x64rag.retrieval.modules.retrieval.methods.document import DocumentRetrieval as DocumentRetrieval
 from x64rag.retrieval.modules.retrieval.methods.graph import GraphRetrieval as GraphRetrieval
 from x64rag.retrieval.modules.retrieval.methods.vector import VectorRetrieval as VectorRetrieval
-from x64rag.retrieval.modules.retrieval.refinement.abstractive import AbstractiveRefiner as AbstractiveRefiner
-from x64rag.retrieval.modules.retrieval.refinement.base import BaseChunkRefiner as BaseChunkRefiner
-from x64rag.retrieval.modules.retrieval.refinement.extractive import ExtractiveRefiner as ExtractiveRefiner
+from x64rag.retrieval.modules.retrieval.refinement.abstractive import AbstractiveRefinement as AbstractiveRefinement
+from x64rag.retrieval.modules.retrieval.refinement.base import BaseChunkRefinement as BaseChunkRefinement
+from x64rag.retrieval.modules.retrieval.refinement.extractive import ExtractiveRefinement as ExtractiveRefinement
 from x64rag.retrieval.modules.retrieval.search.reranking.base import BaseReranking as BaseReranking
 from x64rag.retrieval.modules.retrieval.search.reranking.facade import Reranking as Reranking
 from x64rag.retrieval.modules.retrieval.search.rewriting.base import BaseQueryRewriter as BaseQueryRewriter
@@ -149,9 +149,9 @@ __all__ = [
     "RetrievalPrecision",
     "BaseRetrievalJudge",
     "LLMRetrievalJudge",
-    "BaseChunkRefiner",
-    "ExtractiveRefiner",
-    "AbstractiveRefiner",
+    "BaseChunkRefinement",
+    "ExtractiveRefinement",
+    "AbstractiveRefinement",
     "TreeIndexingConfig",
     "TreeSearchConfig",
     "TreeNode",

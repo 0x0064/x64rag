@@ -11,7 +11,7 @@ from x64rag.retrieval.common.models import RetrievedChunk
 logger = get_logger("retrieval/refinement/abstractive")
 
 
-class AbstractiveRefiner:
+class AbstractiveRefinement:
     """LLM-based abstractive context compression via BAML CompressRetrievedContext.
 
     Sends all retrieved chunks to an LLM with the query, receives a compressed

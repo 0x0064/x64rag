@@ -4,8 +4,8 @@ import pytest
 
 from x64rag.retrieval.common.language_model import LanguageModelClient, LanguageModelProvider
 from x64rag.retrieval.common.models import RetrievedChunk
-from x64rag.retrieval.modules.retrieval.refinement.abstractive import AbstractiveRefiner
-from x64rag.retrieval.modules.retrieval.refinement.extractive import ExtractiveRefiner
+from x64rag.retrieval.modules.retrieval.refinement.abstractive import AbstractiveRefinement
+from x64rag.retrieval.modules.retrieval.refinement.extractive import ExtractiveRefinement
 
 
 def _make_chunk(content: str, chunk_id: str = "c1", page_number: int | None = 1) -> RetrievedChunk:
@@ -23,7 +23,7 @@ def _make_lm_config():
     return LanguageModelClient(provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini"))
 
 
-class TestExtractiveRefiner:
+class TestExtractiveRefinement:
     @pytest.fixture
     def mock_embeddings(self):
         embeddings = AsyncMock()
@@ -31,7 +31,7 @@ class TestExtractiveRefiner:
         return embeddings
 
     async def test_empty_chunks(self, mock_embeddings):
-        refiner = ExtractiveRefiner(embeddings=mock_embeddings)
+        refiner = ExtractiveRefinement(embeddings=mock_embeddings)
         result = await refiner.refine("query", [])
         assert result == []
 
@@ -47,7 +47,7 @@ class TestExtractiveRefiner:
             ]
         )
 
-        refiner = ExtractiveRefiner(embeddings=mock_embeddings, max_sentences=1)
+        refiner = ExtractiveRefinement(embeddings=mock_embeddings, max_sentences=1)
         result = await refiner.refine("query", [chunk])
 
         assert len(result) == 1
@@ -56,9 +56,9 @@ class TestExtractiveRefiner:
         assert result[0].source_metadata == {"name": "Test Doc"}
 
 
-class TestAbstractiveRefiner:
+class TestAbstractiveRefinement:
     async def test_empty_chunks(self):
-        refiner = AbstractiveRefiner(lm_config=_make_lm_config())
+        refiner = AbstractiveRefinement(lm_config=_make_lm_config())
         result = await refiner.refine("query", [])
         assert result == []
 
@@ -75,7 +75,7 @@ class TestAbstractiveRefiner:
             "x64rag.retrieval.modules.retrieval.refinement.abstractive.b.CompressRetrievedContext",
             return_value=mock_result,
         ):
-            refiner = AbstractiveRefiner(lm_config=_make_lm_config())
+            refiner = AbstractiveRefinement(lm_config=_make_lm_config())
             result = await refiner.refine("What is the pressure drop?", chunks)
 
         assert len(result) == 1
@@ -90,7 +90,7 @@ class TestAbstractiveRefiner:
             "x64rag.retrieval.modules.retrieval.refinement.abstractive.b.CompressRetrievedContext",
             side_effect=Exception("LLM error"),
         ):
-            refiner = AbstractiveRefiner(lm_config=_make_lm_config())
+            refiner = AbstractiveRefinement(lm_config=_make_lm_config())
             result = await refiner.refine("query", chunks)
 
         assert len(result) == 1
@@ -106,7 +106,7 @@ class TestAbstractiveRefiner:
             "x64rag.retrieval.modules.retrieval.refinement.abstractive.b.CompressRetrievedContext",
             return_value=mock_result,
         ):
-            refiner = AbstractiveRefiner(lm_config=_make_lm_config())
+            refiner = AbstractiveRefinement(lm_config=_make_lm_config())
             result = await refiner.refine("query", chunks)
 
         assert len(result) == 1
