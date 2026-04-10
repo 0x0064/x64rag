@@ -38,12 +38,7 @@ from x64rag.retrieval.modules.evaluation.retrieval_metrics import RetrievalRecal
 from x64rag.retrieval.modules.generation.models import QueryResult as QueryResult
 from x64rag.retrieval.modules.generation.models import StepResult as StepResult
 from x64rag.retrieval.modules.generation.models import StreamEvent as StreamEvent
-from x64rag.retrieval.modules.ingestion.analyze.models import DiscoveredEntity as DiscoveredEntity
-from x64rag.retrieval.modules.ingestion.analyze.models import DocumentSynthesis as DocumentSynthesis
-from x64rag.retrieval.modules.ingestion.analyze.models import PageAnalysis as PageAnalysis
-from x64rag.retrieval.modules.ingestion.base import BaseIngestionMethod as BaseIngestionMethod
 from x64rag.retrieval.modules.ingestion.embeddings.facade import Embeddings as Embeddings
-from x64rag.retrieval.modules.ingestion.embeddings.sparse.base import BaseSparseEmbeddings as BaseSparseEmbeddings
 from x64rag.retrieval.modules.ingestion.embeddings.sparse.fastembed import (
     FastEmbedSparseEmbeddings as FastEmbedSparseEmbeddings,
 )
@@ -52,19 +47,13 @@ from x64rag.retrieval.modules.ingestion.methods.graph import GraphIngestion as G
 from x64rag.retrieval.modules.ingestion.methods.tree import TreeIngestion as TreeIngestion
 from x64rag.retrieval.modules.ingestion.methods.vector import VectorIngestion as VectorIngestion
 from x64rag.retrieval.modules.ingestion.vision.facade import Vision as Vision
-from x64rag.retrieval.modules.namespace import MethodNamespace as MethodNamespace
-from x64rag.retrieval.modules.retrieval.base import BaseRetrievalMethod as BaseRetrievalMethod
-from x64rag.retrieval.modules.retrieval.judging import BaseRetrievalJudgment as BaseRetrievalJudgment
 from x64rag.retrieval.modules.retrieval.judging import RetrievalJudgment as RetrievalJudgment
 from x64rag.retrieval.modules.retrieval.methods.document import DocumentRetrieval as DocumentRetrieval
 from x64rag.retrieval.modules.retrieval.methods.graph import GraphRetrieval as GraphRetrieval
 from x64rag.retrieval.modules.retrieval.methods.vector import VectorRetrieval as VectorRetrieval
 from x64rag.retrieval.modules.retrieval.refinement.abstractive import AbstractiveRefinement as AbstractiveRefinement
-from x64rag.retrieval.modules.retrieval.refinement.base import BaseChunkRefinement as BaseChunkRefinement
 from x64rag.retrieval.modules.retrieval.refinement.extractive import ExtractiveRefinement as ExtractiveRefinement
-from x64rag.retrieval.modules.retrieval.search.reranking.base import BaseReranking as BaseReranking
 from x64rag.retrieval.modules.retrieval.search.reranking.facade import Reranking as Reranking
-from x64rag.retrieval.modules.retrieval.search.rewriting.base import BaseQueryRewriting as BaseQueryRewriting
 from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewriting as HyDeRewriting
 from x64rag.retrieval.modules.retrieval.search.rewriting.multi_query import MultiQueryRewriting as MultiQueryRewriting
 from x64rag.retrieval.modules.retrieval.search.rewriting.step_back import StepBackRewriting as StepBackRewriting
@@ -76,10 +65,8 @@ from x64rag.retrieval.server import RagServerConfig as RagServerConfig
 from x64rag.retrieval.server import RetrievalConfig as RetrievalConfig
 from x64rag.retrieval.server import TreeIndexingConfig as TreeIndexingConfig
 from x64rag.retrieval.server import TreeSearchConfig as TreeSearchConfig
-from x64rag.retrieval.stores.document.base import BaseDocumentStore as BaseDocumentStore
 from x64rag.retrieval.stores.document.filesystem import FilesystemDocumentStore as FilesystemDocumentStore
 from x64rag.retrieval.stores.document.postgres import PostgresDocumentStore as PostgresDocumentStore
-from x64rag.retrieval.stores.graph.base import BaseGraphStore as BaseGraphStore
 from x64rag.retrieval.stores.graph.models import GraphEntity as GraphEntity
 from x64rag.retrieval.stores.graph.models import GraphPath as GraphPath
 from x64rag.retrieval.stores.graph.models import GraphRelation as GraphRelation
@@ -95,22 +82,55 @@ __all__ = [
     "IngestionConfig",
     "RetrievalConfig",
     "GenerationConfig",
-    "Source",
+    "TreeIndexingConfig",
+    "TreeSearchConfig",
+    "LanguageModelProvider",
+    "LanguageModelClient",
+    "Embeddings",
+    "Vision",
+    "Reranking",
+    "FastEmbedSparseEmbeddings",
+    "QdrantVectorStore",
+    "Neo4jGraphStore",
+    "SQLAlchemyMetadataStore",
+    "PostgresDocumentStore",
+    "FilesystemDocumentStore",
+    "VectorIngestion",
+    "DocumentIngestion",
+    "GraphIngestion",
+    "TreeIngestion",
+    "VectorRetrieval",
+    "DocumentRetrieval",
+    "GraphRetrieval",
+    "HyDeRewriting",
+    "MultiQueryRewriting",
+    "StepBackRewriting",
+    "ExtractiveRefinement",
+    "AbstractiveRefinement",
+    "RetrievalJudgment",
     "QueryResult",
+    "StepResult",
+    "StreamEvent",
     "RetrievedChunk",
     "ContentMatch",
-    "StreamEvent",
+    "Source",
     "SparseVector",
-    "PageAnalysis",
-    "DocumentSynthesis",
-    "DiscoveredEntity",
     "GraphEntity",
     "GraphRelation",
     "GraphPath",
     "GraphResult",
+    "TreeIndex",
+    "TreeNode",
+    "TreePage",
+    "TreeSearchResult",
     "JudgmentResult",
     "MetricResult",
-    "StepResult",
+    "ExactMatch",
+    "F1Score",
+    "LLMJudgment",
+    "RetrievalPrecision",
+    "RetrievalRecall",
+    "ConfigurationError",
     "RagError",
     "IngestionError",
     "ParseError",
@@ -122,52 +142,6 @@ __all__ = [
     "StoreError",
     "DuplicateSourceError",
     "SourceNotFoundError",
-    "ConfigurationError",
-    "Embeddings",
-    "BaseSparseEmbeddings",
-    "FastEmbedSparseEmbeddings",
-    "Vision",
-    "LanguageModelClient",
-    "LanguageModelProvider",
-    "Reranking",
-    "BaseReranking",
-    "BaseQueryRewriting",
-    "HyDeRewriting",
-    "MultiQueryRewriting",
-    "StepBackRewriting",
-    "BaseGraphStore",
-    "Neo4jGraphStore",
-    "QdrantVectorStore",
-    "SQLAlchemyMetadataStore",
-    "BaseDocumentStore",
-    "PostgresDocumentStore",
-    "FilesystemDocumentStore",
-    "ExactMatch",
-    "F1Score",
-    "LLMJudgment",
-    "RetrievalRecall",
-    "RetrievalPrecision",
-    "BaseRetrievalJudgment",
-    "RetrievalJudgment",
-    "BaseChunkRefinement",
-    "ExtractiveRefinement",
-    "AbstractiveRefinement",
-    "TreeIndexingConfig",
-    "TreeSearchConfig",
-    "TreeNode",
-    "TreePage",
-    "TreeIndex",
-    "TreeSearchResult",
     "TreeIndexingError",
     "TreeSearchError",
-    "BaseRetrievalMethod",
-    "BaseIngestionMethod",
-    "MethodNamespace",
-    "VectorRetrieval",
-    "DocumentRetrieval",
-    "GraphRetrieval",
-    "VectorIngestion",
-    "DocumentIngestion",
-    "GraphIngestion",
-    "TreeIngestion",
 ]
