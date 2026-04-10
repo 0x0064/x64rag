@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from x64rag.reasoning.common.errors import AnalysisError
-from x64rag.reasoning.common.language_model import LanguageModelClientConfig, LanguageModelConfig
+from x64rag.reasoning.common.language_model import LanguageModelClient, LanguageModelProvider
 from x64rag.reasoning.modules.analysis.models import (
     AnalysisConfig,
     AnalysisResult,
@@ -18,9 +18,9 @@ from x64rag.reasoning.modules.analysis.models import (
 from x64rag.reasoning.modules.analysis.service import AnalysisService
 
 
-def _lm_config() -> LanguageModelConfig:
-    return LanguageModelConfig(
-        client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini", api_key="test-key"),
+def _lm_config() -> LanguageModelClient:
+    return LanguageModelClient(
+        provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="test-key"),
     )
 
 

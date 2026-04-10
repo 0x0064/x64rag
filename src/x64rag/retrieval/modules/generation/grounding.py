@@ -1,7 +1,7 @@
 from baml_py import errors as baml_errors
 
 from x64rag.retrieval.baml.baml_client.async_client import b
-from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
+from x64rag.retrieval.common.language_model import LanguageModelClient, build_registry
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.common.models import RetrievedChunk
 from x64rag.retrieval.modules.generation.models import RelevanceResult
@@ -37,7 +37,7 @@ class RelevanceGate:
     Falls back to ScoreGate on failure.
     """
 
-    def __init__(self, lm_config: LanguageModelConfig, fallback_gate: ScoreGate) -> None:
+    def __init__(self, lm_config: LanguageModelClient, fallback_gate: ScoreGate) -> None:
         self._registry = build_registry(lm_config)
         self._fallback = fallback_gate
 

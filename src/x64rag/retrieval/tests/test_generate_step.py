@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from x64rag.retrieval.common.errors import GenerationError
-from x64rag.retrieval.common.language_model import LanguageModelClientConfig, LanguageModelConfig
+from x64rag.retrieval.common.language_model import LanguageModelClient, LanguageModelProvider
 from x64rag.retrieval.common.models import RetrievedChunk
 from x64rag.retrieval.modules.generation.step import StepGenerationService
 
@@ -13,7 +13,7 @@ def _make_chunk(content: str) -> RetrievedChunk:
 
 
 def _make_lm_config():
-    return LanguageModelConfig(client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini"))
+    return LanguageModelClient(provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini"))
 
 
 class TestStepGenerationService:

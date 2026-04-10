@@ -5,7 +5,7 @@ from baml_py import errors as baml_errors
 from x64rag.retrieval.baml.baml_client.async_client import b
 from x64rag.retrieval.common.errors import GenerationError
 from x64rag.retrieval.common.formatting import chunks_to_context
-from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
+from x64rag.retrieval.common.language_model import LanguageModelClient, build_registry
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.common.models import RetrievedChunk
 from x64rag.retrieval.modules.generation.grounding import DEFAULT_ESCALATION, RelevanceGate, ScoreGate
@@ -17,13 +17,13 @@ logger = get_logger("generation")
 class GenerationService:
     def __init__(
         self,
-        lm_config: LanguageModelConfig,
+        lm_config: LanguageModelClient,
         system_prompt: str,
         grounding_enabled: bool = False,
         grounding_threshold: float = 0.5,
         relevance_gate_enabled: bool = False,
         guiding_enabled: bool = False,
-        relevance_gate_lm_config: LanguageModelConfig | None = None,
+        relevance_gate_lm_config: LanguageModelClient | None = None,
     ) -> None:
         self._lm_config = lm_config
         self._system_prompt = system_prompt

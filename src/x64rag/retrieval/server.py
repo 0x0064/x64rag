@@ -11,7 +11,7 @@ from x64rag.retrieval.common.errors import ConfigurationError
 if TYPE_CHECKING:
     from x64rag.retrieval.modules.ingestion.tree.service import TreeIndexingService
     from x64rag.retrieval.modules.retrieval.tree.service import TreeSearchService
-from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
+from x64rag.retrieval.common.language_model import LanguageModelClient, build_registry
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.common.models import RetrievedChunk, Source
 from x64rag.retrieval.modules.generation.models import QueryResult, StepResult, StreamEvent
@@ -69,7 +69,7 @@ class IngestionConfig:
     chunk_size: int = 500
     chunk_overlap: int = 50
     dpi: int = 300
-    lm_config: LanguageModelConfig | None = None
+    lm_config: LanguageModelClient | None = None
     sparse_embeddings: BaseSparseEmbeddings | None = None
     parent_chunk_size: int = 0
     parent_chunk_overlap: int = 200
@@ -98,7 +98,7 @@ class RetrievalConfig:
     bm25_tokenizer: Callable[[str], list[str]] | None = None
     source_type_weights: dict[str, float] | None = None
     cross_reference_enrichment: bool = True
-    enrich_lm_config: LanguageModelConfig | None = None
+    enrich_lm_config: LanguageModelClient | None = None
     parent_expansion: bool = True
     chunk_refiner: BaseChunkRefiner | None = None
 
@@ -109,14 +109,14 @@ class RetrievalConfig:
 
 @dataclass
 class GenerationConfig:
-    lm_config: LanguageModelConfig | None = None
+    lm_config: LanguageModelClient | None = None
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
     grounding_enabled: bool = False
     grounding_threshold: float = 0.5
     relevance_gate_enabled: bool = False
-    relevance_gate_model: LanguageModelConfig | None = None
+    relevance_gate_model: LanguageModelClient | None = None
     guiding_enabled: bool = False
-    step_lm_config: LanguageModelConfig | None = None
+    step_lm_config: LanguageModelClient | None = None
 
     def __post_init__(self) -> None:
         if self.grounding_threshold < 0 or self.grounding_threshold > 1:
@@ -134,7 +134,7 @@ class TreeIndexingConfig:
     """Configuration for tree-based document indexing."""
 
     enabled: bool = False
-    model: LanguageModelConfig | None = None
+    model: LanguageModelClient | None = None
     toc_scan_pages: int = 20
     max_pages_per_node: int = 10
     max_tokens_per_node: int = 20_000
@@ -155,7 +155,7 @@ class TreeSearchConfig:
     """Configuration for tree-based search."""
 
     enabled: bool = False
-    model: LanguageModelConfig | None = None
+    model: LanguageModelClient | None = None
     max_steps: int = 5
     max_context_tokens: int = 50_000
 

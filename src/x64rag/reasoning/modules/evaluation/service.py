@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from x64rag.reasoning.common.concurrency import run_concurrent
 from x64rag.reasoning.common.errors import EvaluationError
-from x64rag.reasoning.common.language_model import LanguageModelConfig, build_registry
+from x64rag.reasoning.common.language_model import LanguageModelClient, build_registry
 from x64rag.reasoning.modules.evaluation.metrics import cosine_similarity, llm_judge, semantic_similarity
 from x64rag.reasoning.modules.evaluation.models import (
     EvaluationConfig,
@@ -19,7 +19,7 @@ class EvaluationService:
     def __init__(
         self,
         embeddings: BaseEmbeddings | None = None,
-        lm_config: LanguageModelConfig | None = None,
+        lm_config: LanguageModelClient | None = None,
     ) -> None:
         self._embeddings = embeddings
         self._registry = build_registry(lm_config) if lm_config else None

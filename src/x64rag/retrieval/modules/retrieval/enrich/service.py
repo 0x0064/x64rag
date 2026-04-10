@@ -3,7 +3,7 @@
 import asyncio
 from typing import Any
 
-from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
+from x64rag.retrieval.common.language_model import LanguageModelClient, build_registry
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.common.models import RetrievedChunk
 from x64rag.retrieval.modules.ingestion.embeddings.base import BaseEmbeddings
@@ -20,7 +20,7 @@ class StructuredRetrievalService:
         self,
         vector_store: BaseVectorStore,
         embeddings: BaseEmbeddings,
-        lm_config: LanguageModelConfig | None = None,
+        lm_config: LanguageModelClient | None = None,
         top_k: int = 5,
         enrich_cross_references: bool = True,
     ) -> None:

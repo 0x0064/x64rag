@@ -3,7 +3,7 @@ from __future__ import annotations
 from x64rag.reasoning.baml.baml_client.async_client import b
 from x64rag.reasoning.common.concurrency import run_concurrent
 from x64rag.reasoning.common.errors import AnalysisError
-from x64rag.reasoning.common.language_model import LanguageModelConfig, build_registry
+from x64rag.reasoning.common.language_model import LanguageModelClient, build_registry
 from x64rag.reasoning.common.logging import get_logger
 from x64rag.reasoning.modules.analysis.models import (
     AnalysisConfig,
@@ -96,7 +96,7 @@ def _parse_hints(raw: list) -> list[RetrievalHint]:
 class AnalysisService:
     """Extract structured insights from text or conversation threads."""
 
-    def __init__(self, lm_config: LanguageModelConfig) -> None:
+    def __init__(self, lm_config: LanguageModelClient) -> None:
         self._registry = build_registry(lm_config)
 
     async def analyze(

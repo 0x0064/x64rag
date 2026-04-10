@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from x64rag.reasoning.common.errors import ClassificationError
-from x64rag.reasoning.common.language_model import LanguageModelClientConfig, LanguageModelConfig
+from x64rag.reasoning.common.language_model import LanguageModelClient, LanguageModelProvider
 from x64rag.reasoning.modules.classification.models import (
     CategoryDefinition,
     Classification,
@@ -18,9 +18,9 @@ from x64rag.reasoning.modules.classification.service import ClassificationServic
 from x64rag.reasoning.modules.classification.strategies import format_categories, format_category_sets
 
 
-def _lm_config() -> LanguageModelConfig:
-    return LanguageModelConfig(
-        client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini", api_key="test-key"),
+def _lm_config() -> LanguageModelClient:
+    return LanguageModelClient(
+        provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="test-key"),
     )
 
 

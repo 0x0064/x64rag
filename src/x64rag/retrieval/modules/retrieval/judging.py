@@ -3,7 +3,7 @@ from typing import Protocol
 from baml_py import errors as baml_errors
 
 from x64rag.retrieval.baml.baml_client.async_client import b
-from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
+from x64rag.retrieval.common.language_model import LanguageModelClient, build_registry
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.modules.evaluation.models import JudgmentResult
 
@@ -25,7 +25,7 @@ class LLMRetrievalJudge:
 
     def __init__(
         self,
-        lm_config: LanguageModelConfig,
+        lm_config: LanguageModelClient,
         knowledge_description: str | None = None,
     ) -> None:
         self._lm_config = lm_config

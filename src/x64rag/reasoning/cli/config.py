@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 from x64rag.reasoning.cli.constants import CONFIG_FILE, ENV_FILE, ConfigError, load_dotenv
-from x64rag.reasoning.common.language_model import LanguageModelClientConfig, LanguageModelConfig
+from x64rag.reasoning.common.language_model import LanguageModelClient, LanguageModelProvider
 
 if TYPE_CHECKING:
     from x64rag.reasoning.modules.analysis.service import AnalysisService
@@ -33,7 +33,7 @@ def _get_api_key(env_var: str, provider_name: str) -> str:
     return key
 
 
-def _build_lm_client_config(cfg: dict[str, Any]) -> LanguageModelClientConfig:
+def _build_lm_provider(cfg: dict[str, Any]) -> LanguageModelProvider:
     provider = cfg.get("provider")
     if not provider:
         raise ConfigError("[language_model] requires 'provider' (anthropic or openai)")
@@ -48,17 +48,15 @@ def _build_lm_client_config(cfg: dict[str, Any]) -> LanguageModelClientConfig:
     model_override = os.environ.get("X64RAG_MODEL")
     model = model_override or cfg.get("model", _LM_DEFAULTS[provider])
 
-    return LanguageModelClientConfig(
+    return LanguageModelProvider(
         provider=provider,
         model=model,
         api_key=api_key,
-        max_tokens=cfg.get("max_tokens", 4096),
-        temperature=cfg.get("temperature", 0.0),
     )
 
 
-def build_lm_config(toml: dict[str, Any]) -> LanguageModelConfig:
-    """Build LanguageModelConfig from [language_model] section."""
+def build_lm_config(toml: dict[str, Any]) -> LanguageModelClient:
+    """Build LanguageModelClient from [language_model] section."""
     lm_cfg = toml.get("language_model", {})
     if not lm_cfg:
         raise ConfigError("[language_model] section required in config.toml")
@@ -67,20 +65,22 @@ def build_lm_config(toml: dict[str, Any]) -> LanguageModelConfig:
     if provider_override:
         lm_cfg = {**lm_cfg, "provider": provider_override}
 
-    client = _build_lm_client_config(lm_cfg)
+    primary_provider = _build_lm_provider(lm_cfg)
 
-    fallback = None
+    fallback_provider = None
     strategy: Literal["primary_only", "fallback"] = "primary_only"
     fallback_cfg = lm_cfg.get("fallback")
     if fallback_cfg:
-        fallback = _build_lm_client_config(fallback_cfg)
+        fallback_provider = _build_lm_provider(fallback_cfg)
         strategy = "fallback"
 
-    return LanguageModelConfig(
-        client=client,
-        fallback=fallback,
+    return LanguageModelClient(
+        provider=primary_provider,
+        fallback=fallback_provider,
         max_retries=lm_cfg.get("max_retries", 3),
         strategy=strategy,
+        max_tokens=lm_cfg.get("max_tokens", 4096),
+        temperature=lm_cfg.get("temperature", 0.0),
     )
 
 

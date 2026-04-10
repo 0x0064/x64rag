@@ -4,7 +4,7 @@ from baml_py import errors as baml_errors
 
 from x64rag.retrieval.baml.baml_client.async_client import b
 from x64rag.retrieval.common.formatting import format_chunk_header
-from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
+from x64rag.retrieval.common.language_model import LanguageModelClient, build_registry
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.common.models import RetrievedChunk
 
@@ -20,7 +20,7 @@ class AbstractiveRefiner:
     dropped since the LLM has already fused and compressed all content.
     """
 
-    def __init__(self, lm_config: LanguageModelConfig, max_output_tokens: int = 1024) -> None:
+    def __init__(self, lm_config: LanguageModelClient, max_output_tokens: int = 1024) -> None:
         self._lm_config = lm_config
         self._max_output_tokens = max_output_tokens
 

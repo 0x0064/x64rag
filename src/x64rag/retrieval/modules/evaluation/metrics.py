@@ -3,7 +3,7 @@ from collections import Counter
 from typing import Protocol
 
 from x64rag.retrieval.baml.baml_client.async_client import b
-from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
+from x64rag.retrieval.common.language_model import LanguageModelClient, build_registry
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.modules.evaluation.models import MetricResult
 from x64rag.retrieval.modules.evaluation.normalize import normalize_answer
@@ -71,7 +71,7 @@ class LLMJudge:
 
     name: str = "llm_judge"
 
-    def __init__(self, lm_config: LanguageModelConfig) -> None:
+    def __init__(self, lm_config: LanguageModelClient) -> None:
         self._lm_config = lm_config
 
     async def score(self, prediction: str, references: list[str], query: str = "") -> float:

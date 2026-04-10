@@ -9,7 +9,7 @@ from baml_py import errors as baml_errors
 
 from x64rag.retrieval.common.errors import ConfigurationError, IngestionError
 from x64rag.retrieval.common.hashing import file_hash as compute_file_hash
-from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
+from x64rag.retrieval.common.language_model import LanguageModelClient, build_registry
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.common.models import Source, VectorPoint
 from x64rag.retrieval.common.page_range import parse_page_range
@@ -48,7 +48,7 @@ class AnalyzedIngestionService:
         dpi: int = 300,
         source_type_weights: dict[str, float] | None = None,
         on_ingestion_complete: Callable[[str | None], Awaitable[None]] | None = None,
-        lm_config: LanguageModelConfig | None = None,
+        lm_config: LanguageModelClient | None = None,
         graph_store: BaseGraphStore | None = None,
         ingestion_methods: list | None = None,
     ) -> None:
@@ -289,7 +289,7 @@ class AnalyzedIngestionService:
             raise ConfigurationError(
                 "IngestionConfig.lm_config is required for structured PDF analysis "
                 "(used by AnalyzePage and SynthesizeDocument BAML functions). "
-                "Provide a LanguageModelConfig with your LLM provider and API key."
+                "Provide a LanguageModelClient with your LLM provider and API key."
             )
 
         images = split_pdf_to_images(file_path, dpi=self._dpi, pages=page_range)
@@ -356,7 +356,7 @@ class AnalyzedIngestionService:
             raise ConfigurationError(
                 "IngestionConfig.lm_config is required for PDF synthesis "
                 "(used by SynthesizeDocument BAML function). "
-                "Provide a LanguageModelConfig with your LLM provider and API key."
+                "Provide a LanguageModelClient with your LLM provider and API key."
             )
 
         from x64rag.retrieval.baml.baml_client.async_client import b

@@ -5,7 +5,7 @@ from typing import Any
 import numpy as np
 
 from x64rag.reasoning.common.errors import ClusteringError
-from x64rag.reasoning.common.language_model import LanguageModelConfig, build_registry
+from x64rag.reasoning.common.language_model import LanguageModelClient, build_registry
 from x64rag.reasoning.common.logging import get_logger
 from x64rag.reasoning.modules.clustering.algorithms import run_clustering
 from x64rag.reasoning.modules.clustering.labeling import generate_cluster_labels
@@ -23,7 +23,7 @@ class ClusteringService:
     def __init__(
         self,
         embeddings: BaseEmbeddings,
-        lm_config: LanguageModelConfig | None = None,
+        lm_config: LanguageModelClient | None = None,
     ) -> None:
         self._embeddings = embeddings
         self._registry = build_registry(lm_config) if lm_config else None

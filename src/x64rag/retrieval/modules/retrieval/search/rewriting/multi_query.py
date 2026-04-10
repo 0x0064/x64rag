@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from baml_py import errors as baml_errors
 
 from x64rag.retrieval.baml.baml_client.async_client import b
-from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
+from x64rag.retrieval.common.language_model import LanguageModelClient, build_registry
 from x64rag.retrieval.common.logging import get_logger
 
 logger = get_logger("retrieval/rewriting/multi_query")
@@ -21,7 +21,7 @@ class MultiQueryRewriter:
     via reciprocal rank fusion.
     """
 
-    lm_config: LanguageModelConfig
+    lm_config: LanguageModelClient
     num_variants: int = DEFAULT_NUM_VARIANTS
 
     async def rewrite(self, query: str, conversation_context: str | None = None) -> list[str]:

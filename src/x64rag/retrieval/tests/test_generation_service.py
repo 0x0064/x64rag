@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from x64rag.retrieval.common.errors import GenerationError
-from x64rag.retrieval.common.language_model import LanguageModelClientConfig, LanguageModelConfig
+from x64rag.retrieval.common.language_model import LanguageModelClient, LanguageModelProvider
 from x64rag.retrieval.common.models import RetrievedChunk
 from x64rag.retrieval.modules.generation.grounding import DEFAULT_ESCALATION
 from x64rag.retrieval.modules.generation.models import RelevanceResult
@@ -21,8 +21,8 @@ def _chunk(chunk_id: str = "c1", score: float = 0.9) -> RetrievedChunk:
     )
 
 
-def _lm_config() -> LanguageModelConfig:
-    return LanguageModelConfig(client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini"))
+def _lm_config() -> LanguageModelClient:
+    return LanguageModelClient(provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini"))
 
 
 def _make_service(

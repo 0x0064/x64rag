@@ -11,8 +11,8 @@ from x64rag.reasoning.common.errors import ClusteringError as ClusteringError
 from x64rag.reasoning.common.errors import ComplianceError as ComplianceError
 from x64rag.reasoning.common.errors import ConfigurationError as ConfigurationError
 from x64rag.reasoning.common.errors import EvaluationError as EvaluationError
-from x64rag.reasoning.common.language_model import LanguageModelClientConfig as LanguageModelClientConfig
-from x64rag.reasoning.common.language_model import LanguageModelConfig as LanguageModelConfig
+from x64rag.reasoning.common.language_model import LanguageModelClient as LanguageModelClient
+from x64rag.reasoning.common.language_model import LanguageModelProvider as LanguageModelProvider
 from x64rag.reasoning.modules.analysis.models import AnalysisConfig as AnalysisConfig
 from x64rag.reasoning.modules.analysis.models import AnalysisResult as AnalysisResult
 from x64rag.reasoning.modules.analysis.models import ContextTrackingConfig as ContextTrackingConfig
@@ -67,8 +67,8 @@ __all__ = [
     "ComplianceError",
     "ConfigurationError",
     "EvaluationError",
-    "LanguageModelClientConfig",
-    "LanguageModelConfig",
+    "LanguageModelClient",
+    "LanguageModelProvider",
     "BaseEmbeddings",
     "BaseVectorStore",
     "AnalysisConfig",

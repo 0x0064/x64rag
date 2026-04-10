@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 
 from x64rag.reasoning.common.errors import ClusteringError
-from x64rag.reasoning.common.language_model import LanguageModelClientConfig, LanguageModelConfig
+from x64rag.reasoning.common.language_model import LanguageModelClient, LanguageModelProvider
 from x64rag.reasoning.modules.clustering.algorithms import run_clustering
 from x64rag.reasoning.modules.clustering.comparison import ClusterComparison, compare_clusters
 from x64rag.reasoning.modules.clustering.models import Cluster, ClusteringConfig, ClusteringResult, TextWithMetadata
@@ -30,9 +30,9 @@ class _MockEmbeddings:
         return 16
 
 
-def _lm_config() -> LanguageModelConfig:
-    return LanguageModelConfig(
-        client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini", api_key="test-key"),
+def _lm_config() -> LanguageModelClient:
+    return LanguageModelClient(
+        provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="test-key"),
     )
 
 

@@ -18,8 +18,8 @@ from x64rag.retrieval.common.errors import SourceNotFoundError as SourceNotFound
 from x64rag.retrieval.common.errors import StoreError as StoreError
 from x64rag.retrieval.common.errors import TreeIndexingError as TreeIndexingError
 from x64rag.retrieval.common.errors import TreeSearchError as TreeSearchError
-from x64rag.retrieval.common.language_model import LanguageModelClientConfig as LanguageModelClientConfig
-from x64rag.retrieval.common.language_model import LanguageModelConfig as LanguageModelConfig
+from x64rag.retrieval.common.language_model import LanguageModelClient as LanguageModelClient
+from x64rag.retrieval.common.language_model import LanguageModelProvider as LanguageModelProvider
 from x64rag.retrieval.common.models import ContentMatch as ContentMatch
 from x64rag.retrieval.common.models import RetrievedChunk as RetrievedChunk
 from x64rag.retrieval.common.models import Source as Source
@@ -133,8 +133,8 @@ __all__ = [
     "FastEmbedSparseEmbeddings",
     "AnthropicVision",
     "OpenAIVision",
-    "LanguageModelConfig",
-    "LanguageModelClientConfig",
+    "LanguageModelClient",
+    "LanguageModelProvider",
     "CohereReranking",
     "VoyageReranking",
     "BaseQueryRewriter",

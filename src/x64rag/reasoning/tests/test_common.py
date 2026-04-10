@@ -7,7 +7,7 @@ import pytest
 
 from x64rag.reasoning.common.concurrency import run_concurrent
 from x64rag.reasoning.common.errors import AceError, ConfigurationError
-from x64rag.reasoning.common.language_model import LanguageModelClientConfig, LanguageModelConfig, build_registry
+from x64rag.reasoning.common.language_model import LanguageModelClient, LanguageModelProvider, build_registry
 
 
 async def test_concurrent_preserves_order():
@@ -59,17 +59,17 @@ async def test_concurrent_propagates_errors():
 
 
 def test_lm_config_valid_primary_only():
-    config = LanguageModelConfig(
-        client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini"),
+    config = LanguageModelClient(
+        provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini"),
     )
     assert config.strategy == "primary_only"
     assert config.max_retries == 3
 
 
 def test_lm_config_valid_fallback():
-    config = LanguageModelConfig(
-        client=LanguageModelClientConfig(provider="openai", model="gpt-4o"),
-        fallback=LanguageModelClientConfig(provider="anthropic", model="claude-sonnet-4-20250514"),
+    config = LanguageModelClient(
+        provider=LanguageModelProvider(provider="openai", model="gpt-4o"),
+        fallback=LanguageModelProvider(provider="anthropic", model="claude-sonnet-4-20250514"),
         strategy="fallback",
     )
     assert config.fallback is not None
@@ -77,48 +77,48 @@ def test_lm_config_valid_fallback():
 
 def test_lm_config_invalid_strategy():
     with pytest.raises(ConfigurationError, match="Invalid strategy"):
-        LanguageModelConfig(
-            client=LanguageModelClientConfig(provider="openai", model="gpt-4o"),
+        LanguageModelClient(
+            provider=LanguageModelProvider(provider="openai", model="gpt-4o"),
             strategy="invalid",
         )
 
 
 def test_lm_config_max_retries_negative():
     with pytest.raises(ConfigurationError, match="max_retries"):
-        LanguageModelConfig(
-            client=LanguageModelClientConfig(provider="openai", model="gpt-4o"),
+        LanguageModelClient(
+            provider=LanguageModelProvider(provider="openai", model="gpt-4o"),
             max_retries=-1,
         )
 
 
 def test_lm_config_max_retries_exceeds_limit():
     with pytest.raises(ConfigurationError, match="max_retries"):
-        LanguageModelConfig(
-            client=LanguageModelClientConfig(provider="openai", model="gpt-4o"),
+        LanguageModelClient(
+            provider=LanguageModelProvider(provider="openai", model="gpt-4o"),
             max_retries=6,
         )
 
 
 def test_lm_config_fallback_strategy_without_fallback():
     with pytest.raises(ConfigurationError, match="requires a fallback"):
-        LanguageModelConfig(
-            client=LanguageModelClientConfig(provider="openai", model="gpt-4o"),
+        LanguageModelClient(
+            provider=LanguageModelProvider(provider="openai", model="gpt-4o"),
             strategy="fallback",
         )
 
 
 def test_build_registry_primary_only():
-    config = LanguageModelConfig(
-        client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini", api_key="key"),
+    config = LanguageModelClient(
+        provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="key"),
     )
     registry = build_registry(config)
     assert registry is not None
 
 
 def test_build_registry_with_fallback():
-    config = LanguageModelConfig(
-        client=LanguageModelClientConfig(provider="openai", model="gpt-4o", api_key="key1"),
-        fallback=LanguageModelClientConfig(provider="anthropic", model="claude-sonnet-4-20250514", api_key="key2"),
+    config = LanguageModelClient(
+        provider=LanguageModelProvider(provider="openai", model="gpt-4o", api_key="key1"),
+        fallback=LanguageModelProvider(provider="anthropic", model="claude-sonnet-4-20250514", api_key="key2"),
         strategy="fallback",
     )
     registry = build_registry(config)
@@ -126,8 +126,8 @@ def test_build_registry_with_fallback():
 
 
 def test_build_registry_zero_retries():
-    config = LanguageModelConfig(
-        client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini"),
+    config = LanguageModelClient(
+        provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini"),
         max_retries=0,
     )
     registry = build_registry(config)
@@ -136,8 +136,8 @@ def test_build_registry_zero_retries():
 
 @patch.dict("os.environ", {}, clear=False)
 def test_build_registry_sets_boundary_key():
-    config = LanguageModelConfig(
-        client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini"),
+    config = LanguageModelClient(
+        provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini"),
         boundary_api_key="test-boundary-key",
     )
     build_registry(config)

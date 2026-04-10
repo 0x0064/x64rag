@@ -2,7 +2,7 @@ from dataclasses import replace
 
 from baml_py import errors as baml_errors
 
-from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
+from x64rag.retrieval.common.language_model import LanguageModelClient, build_registry
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.common.models import RetrievedChunk
 
@@ -10,7 +10,7 @@ logger = get_logger(__name__)
 
 
 class LLMReranking:
-    def __init__(self, lm_config: LanguageModelConfig) -> None:
+    def __init__(self, lm_config: LanguageModelClient) -> None:
         self._registry = build_registry(lm_config)
 
     async def rerank(self, query: str, results: list[RetrievedChunk], top_k: int = 5) -> list[RetrievedChunk]:

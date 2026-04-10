@@ -3,7 +3,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from x64rag.retrieval.common.language_model import LanguageModelConfig, build_registry
+from x64rag.retrieval.common.language_model import LanguageModelClient, build_registry
 from x64rag.retrieval.common.logging import get_logger
 from x64rag.retrieval.modules.ingestion.analyze.models import DiscoveredEntity, PageAnalysis
 from x64rag.retrieval.modules.ingestion.models import ChunkedContent, ParsedPage
@@ -36,7 +36,7 @@ class GraphIngestion:
     def __init__(
         self,
         graph_store: BaseGraphStore,
-        lm_config: LanguageModelConfig | None = None,
+        lm_config: LanguageModelClient | None = None,
     ) -> None:
         self._store = graph_store
         self._registry = build_registry(lm_config) if lm_config else None

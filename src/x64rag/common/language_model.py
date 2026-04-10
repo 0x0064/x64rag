@@ -16,20 +16,28 @@ _CLIENT_ROUTER = "Router"
 
 
 @dataclass
-class LanguageModelClientConfig:
+class LanguageModelProvider:
+    """Identity: which API, which model, auth key.
+
+    Used directly by Embeddings/Vision/Reranking for dedicated provider APIs,
+    or wrapped by LanguageModelClient for BAML-routed LLM calls.
+    """
+
     provider: str
     model: str
     api_key: str | None = None
-    max_tokens: int = 4096
-    temperature: float = 0.0
 
 
 @dataclass
-class LanguageModelConfig:
-    client: LanguageModelClientConfig
-    fallback: LanguageModelClientConfig | None = None
+class LanguageModelClient:
+    """BAML-backed LLM client: routing, retries, fallback, generation params."""
+
+    provider: LanguageModelProvider
+    fallback: LanguageModelProvider | None = None
     max_retries: int = 3
     strategy: Literal["primary_only", "fallback"] = "primary_only"
+    max_tokens: int = 4096
+    temperature: float = 0.0
     boundary_api_key: str | None = None
 
     def __post_init__(self) -> None:
@@ -47,33 +55,33 @@ def _retry_policy_name(max_retries: int) -> str | None:
     return f"Retry{max_retries}"
 
 
-def _build_client_options(client_config: LanguageModelClientConfig) -> dict:
+def _build_client_options(provider: LanguageModelProvider, max_tokens: int, temperature: float) -> dict:
     options = {
-        "model": client_config.model,
-        "temperature": client_config.temperature,
-        "max_tokens": client_config.max_tokens,
+        "model": provider.model,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
     }
-    if client_config.api_key:
-        options["api_key"] = client_config.api_key
+    if provider.api_key:
+        options["api_key"] = provider.api_key
     return options
 
 
-def build_registry(config: LanguageModelConfig) -> ClientRegistry:
+def build_registry(client: LanguageModelClient) -> ClientRegistry:
     registry = ClientRegistry()
-    policy = _retry_policy_name(config.max_retries)
+    policy = _retry_policy_name(client.max_retries)
 
     registry.add_llm_client(
         _CLIENT_DEFAULT,
-        provider=config.client.provider,
-        options=_build_client_options(config.client),
+        provider=client.provider.provider,
+        options=_build_client_options(client.provider, client.max_tokens, client.temperature),
         retry_policy=policy,
     )
 
-    if config.strategy == "fallback" and config.fallback:
+    if client.strategy == "fallback" and client.fallback is not None:
         registry.add_llm_client(
             _CLIENT_FALLBACK,
-            provider=config.fallback.provider,
-            options=_build_client_options(config.fallback),
+            provider=client.fallback.provider,
+            options=_build_client_options(client.fallback, client.max_tokens, client.temperature),
             retry_policy=policy,
         )
         registry.add_llm_client(
@@ -85,7 +93,7 @@ def build_registry(config: LanguageModelConfig) -> ClientRegistry:
     else:
         registry.set_primary(_CLIENT_DEFAULT)
 
-    if config.boundary_api_key:
-        os.environ["BOUNDARY_API_KEY"] = config.boundary_api_key
+    if client.boundary_api_key:
+        os.environ["BOUNDARY_API_KEY"] = client.boundary_api_key
 
     return registry

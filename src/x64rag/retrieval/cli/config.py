@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from x64rag.retrieval.cli.constants import CONFIG_FILE, ENV_FILE, ConfigError, load_dotenv
-from x64rag.retrieval.common.language_model import LanguageModelClientConfig, LanguageModelConfig
+from x64rag.retrieval.common.language_model import LanguageModelClient, LanguageModelProvider
 from x64rag.retrieval.modules.ingestion.embeddings.base import BaseEmbeddings
 from x64rag.retrieval.modules.ingestion.embeddings.cohere import CohereEmbeddings
 from x64rag.retrieval.modules.ingestion.embeddings.openai import OpenAIEmbeddings
@@ -146,8 +146,8 @@ def _build_query_rewriter(cfg: dict[str, Any]):
         raise ConfigError(f"Unknown rewriter provider: {provider!r}. Supported: {', '.join(_GENERATION_KEYS)}")
     api_key = _get_api_key(env_var, provider)
 
-    lm_config = LanguageModelConfig(
-        client=LanguageModelClientConfig(provider=provider, model=model, api_key=api_key),
+    lm_config = LanguageModelClient(
+        provider=LanguageModelProvider(provider=provider, model=model, api_key=api_key),
     )
 
     rewriters = {
@@ -183,8 +183,8 @@ def _build_generation_config(cfg: dict[str, Any]) -> GenerationConfig:
     api_key = _get_api_key(env_var, provider)
     model = cfg.get("model", _GENERATION_DEFAULTS[provider])
 
-    lm_config = LanguageModelConfig(
-        client=LanguageModelClientConfig(
+    lm_config = LanguageModelClient(
+        provider=LanguageModelProvider(
             provider=provider,
             model=model,
             api_key=api_key,
@@ -199,8 +199,8 @@ def _build_generation_config(cfg: dict[str, Any]) -> GenerationConfig:
         if rg_env_var is None:
             raise ConfigError(f"Unknown relevance_gate_provider: {rg_provider!r}")
         rg_api_key = _get_api_key(rg_env_var, rg_provider)
-        relevance_gate_lm = LanguageModelConfig(
-            client=LanguageModelClientConfig(provider=rg_provider, model=rg_model, api_key=rg_api_key),
+        relevance_gate_lm = LanguageModelClient(
+            provider=LanguageModelProvider(provider=rg_provider, model=rg_model, api_key=rg_api_key),
         )
 
     return GenerationConfig(
@@ -221,8 +221,8 @@ def _build_metadata_store(cfg: dict[str, Any]) -> SQLAlchemyMetadataStore:
     return SQLAlchemyMetadataStore(url=url)
 
 
-def _build_tree_lm(cfg: dict[str, Any], section_name: str) -> LanguageModelConfig | None:
-    """Build a LanguageModelConfig from a tree config section's provider/model."""
+def _build_tree_lm(cfg: dict[str, Any], section_name: str) -> LanguageModelClient | None:
+    """Build a LanguageModelClient from a tree config section's provider/model."""
     provider = cfg.get("provider")
     if not provider:
         return None
@@ -233,8 +233,8 @@ def _build_tree_lm(cfg: dict[str, Any], section_name: str) -> LanguageModelConfi
     model = cfg.get("model")
     if not model:
         raise ConfigError(f"[{section_name}] requires 'model' when provider is set")
-    return LanguageModelConfig(
-        client=LanguageModelClientConfig(provider=provider, model=model, api_key=api_key),
+    return LanguageModelClient(
+        provider=LanguageModelProvider(provider=provider, model=model, api_key=api_key),
     )
 
 

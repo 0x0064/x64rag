@@ -9,7 +9,7 @@ from x64rag.reasoning.cli import cli, run_async
 from x64rag.reasoning.cli.config import build_lm_config, load_config
 from x64rag.reasoning.cli.constants import CONFIG_FILE, ENV_FILE, ConfigError
 from x64rag.reasoning.cli.output import OutputMode, print_error, print_json
-from x64rag.reasoning.common.language_model import LanguageModelConfig
+from x64rag.reasoning.common.language_model import LanguageModelClient
 
 
 @cli.command()
@@ -40,8 +40,8 @@ def status(ctx: click.Context) -> None:
         raise SystemExit(1) from None
 
     if mode == OutputMode.PRETTY:
-        click.echo(f"Provider: {lm_config.client.provider}")
-        click.echo(f"Model: {lm_config.client.model}")
+        click.echo(f"Provider: {lm_config.provider.provider}")
+        click.echo(f"Model: {lm_config.provider.model}")
         if lm_config.fallback:
             click.echo(f"Fallback: {lm_config.fallback.provider}/{lm_config.fallback.model}")
         if toml.get("embeddings"):
@@ -54,7 +54,7 @@ def status(ctx: click.Context) -> None:
     run_async(_test_connection(lm_config, toml, mode))
 
 
-async def _test_connection(lm_config: LanguageModelConfig, toml: dict[str, Any], mode: OutputMode) -> None:
+async def _test_connection(lm_config: LanguageModelClient, toml: dict[str, Any], mode: OutputMode) -> None:
     from x64rag.reasoning.modules.analysis.service import AnalysisService
 
     try:
@@ -66,8 +66,8 @@ async def _test_connection(lm_config: LanguageModelConfig, toml: dict[str, Any],
         else:
             status_data: dict[str, Any] = {
                 "status": "ok",
-                "provider": lm_config.client.provider,
-                "model": lm_config.client.model,
+                "provider": lm_config.provider.provider,
+                "model": lm_config.provider.model,
             }
             if toml.get("embeddings"):
                 status_data["embeddings"] = toml["embeddings"].get("provider", "openai")

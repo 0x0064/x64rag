@@ -4,7 +4,7 @@ from typing import Any
 
 from x64rag.reasoning.common.concurrency import run_concurrent
 from x64rag.reasoning.common.errors import ClassificationError
-from x64rag.reasoning.common.language_model import LanguageModelConfig, build_registry
+from x64rag.reasoning.common.language_model import LanguageModelClient, build_registry
 from x64rag.reasoning.modules.classification.models import (
     CategoryDefinition,
     Classification,
@@ -27,7 +27,7 @@ class ClassificationService:
     def __init__(
         self,
         embeddings: BaseEmbeddings | None = None,
-        lm_config: LanguageModelConfig | None = None,
+        lm_config: LanguageModelClient | None = None,
         vector_store: BaseVectorStore | None = None,
     ) -> None:
         self._embeddings = embeddings
