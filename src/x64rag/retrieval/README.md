@@ -13,16 +13,17 @@ from x64rag.retrieval import (
     TreeIndexingConfig, TreeSearchConfig,
     QdrantVectorStore, SQLAlchemyMetadataStore,
     PostgresDocumentStore, Neo4jGraphStore,
-    OpenAIEmbeddings, FastEmbedSparseEmbeddings, AnthropicVision,
-    CohereReranking, HyDeRewriter,
-    LanguageModelConfig, LanguageModelClientConfig,
+    Embeddings, FastEmbedSparseEmbeddings, Vision,
+    Reranking, HyDeRewriting,
+    LanguageModelClient, LanguageModelProvider,
 )
 
-rewriter_lm = LanguageModelConfig(
-    client=LanguageModelClientConfig(
+rewriter_lm = LanguageModelClient(
+    provider=LanguageModelProvider(
         provider="anthropic", model="claude-haiku-4-5-20251001", api_key="...",
-        max_tokens=512, temperature=0.3,
     ),
+    max_tokens=512,
+    temperature=0.3,
 )
 
 config = RagServerConfig(
@@ -33,9 +34,9 @@ config = RagServerConfig(
         graph_store=Neo4jGraphStore(uri="bolt://localhost:7687", username="neo4j", password="..."),
     ),
     ingestion=IngestionConfig(
-        embeddings=OpenAIEmbeddings(api_key="...", model="text-embedding-3-small"),
+        embeddings=Embeddings(LanguageModelProvider(provider="openai", model="text-embedding-3-small", api_key="...")),
         sparse_embeddings=FastEmbedSparseEmbeddings(),
-        vision=AnthropicVision(api_key="...", model="claude-sonnet-4-20250514"),
+        vision=Vision(LanguageModelProvider(provider="anthropic", model="claude-sonnet-4-20250514", api_key="...")),
         chunk_size=500,
         chunk_overlap=50,
         parent_chunk_size=1500,
@@ -44,26 +45,26 @@ config = RagServerConfig(
     ),
     retrieval=RetrievalConfig(
         top_k=5,
-        reranker=CohereReranking(api_key="...", model="rerank-v3.5"),
-        query_rewriter=HyDeRewriter(lm_config=rewriter_lm),
+        reranker=Reranking(LanguageModelProvider(provider="cohere", model="rerank-v3.5", api_key="...")),
+        query_rewriter=HyDeRewriting(lm_config=rewriter_lm),
         source_type_weights={"manual": 1.0, "transcript": 0.5},
         parent_expansion=True,
         cross_reference_enrichment=True,
-        enrich_lm_config=LanguageModelConfig(
-            client=LanguageModelClientConfig(provider="openai", model="gpt-4o", api_key="..."),
+        enrich_lm_config=LanguageModelClient(
+            provider=LanguageModelProvider(provider="openai", model="gpt-4o", api_key="..."),
         ),
     ),
     generation=GenerationConfig(
-        lm_config=LanguageModelConfig(
-            client=LanguageModelClientConfig(
+        lm_config=LanguageModelClient(
+            provider=LanguageModelProvider(
                 provider="anthropic", model="claude-sonnet-4-20250514", api_key="...",
             ),
         ),
         grounding_enabled=True,
         grounding_threshold=0.5,
         relevance_gate_enabled=True,
-        relevance_gate_model=LanguageModelConfig(
-            client=LanguageModelClientConfig(
+        relevance_gate_model=LanguageModelClient(
+            provider=LanguageModelProvider(
                 provider="anthropic", model="claude-haiku-4-5-20251001", api_key="...",
             ),
         ),
@@ -207,7 +208,7 @@ Up to five search paths run concurrently per query and merge results via recipro
 
 After fusion, two optional stages run in sequence:
 
-- **Reranking** — Cross-encoder reranking against the original query (`CohereReranking`, `VoyageReranking`). Reorders fused results by relevance before truncating to `top_k`.
+- **Reranking** — Cross-encoder reranking against the original query via `Reranking` (Cohere, Voyage, or LLM-based). Reorders fused results by relevance before truncating to `top_k`.
 - **Chunk refinement** — Extractive (context window extraction) or abstractive (LLM-based summarization) refinement of the final chunks.
 
 ```python
@@ -273,7 +274,7 @@ Evaluate retrieval and generation quality with configurable metrics.
 
 - **ExactMatch** — Binary match after normalization
 - **F1Score** — Token-level overlap
-- **LLMJudge** — LLM-as-judge scoring via BAML
+- **LLMJudgment** — LLM-as-judge scoring via BAML
 - **RetrievalPrecision / RetrievalRecall** — Measure retrieval quality against ground truth
 
 ---
@@ -297,12 +298,12 @@ All providers use Python `Protocol` (structural typing). Swap freely, or impleme
 
 | Category | Options |
 |----------|---------|
-| Embeddings | `OpenAIEmbeddings`, `VoyageEmbeddings`, `CohereEmbeddings` |
+| Embeddings | `Embeddings(LanguageModelProvider(...))` — OpenAI, Voyage, Cohere |
 | Sparse Embeddings | `FastEmbedSparseEmbeddings` (SPLADE via FastEmbed) |
-| Generation | Via `LanguageModelConfig` (any BAML-supported provider) |
-| Reranking | `CohereReranking`, `VoyageReranking` |
-| Query Rewriting | `HyDeRewriter`, `MultiQueryRewriter`, `StepBackRewriter` |
-| Vision | `AnthropicVision`, `OpenAIVision` |
+| Generation | Via `LanguageModelClient` (any BAML-supported provider) |
+| Reranking | `Reranking(LanguageModelProvider(...))` — Cohere, Voyage, or LLM-based |
+| Query Rewriting | `HyDeRewriting`, `MultiQueryRewriting`, `StepBackRewriting` |
+| Vision | `Vision(LanguageModelProvider(...))` — Anthropic, OpenAI |
 | Vector Store | `QdrantVectorStore` (dense + sparse named vectors, hybrid search) |
 | Metadata Store | `SQLAlchemyMetadataStore` (PostgreSQL via asyncpg, SQLite via aiosqlite) |
 | Document Store | `PostgresDocumentStore`, `FilesystemDocumentStore` |
@@ -402,7 +403,7 @@ Async context manager: `async with RagServer(config) as rag:`
 | `parent_chunk_overlap` | `int` | `200` | Token overlap between parent chunks |
 | `contextual_chunking` | `bool` | `True` | Prepend document context to each chunk before embedding |
 | `sparse_embeddings` | `BaseSparseEmbeddings` | `None` | SPLADE sparse vectors for hybrid search |
-| `lm_config` | `LanguageModelConfig` | `None` | LLM config for structured analysis |
+| `lm_config` | `LanguageModelClient` | `None` | LLM config for structured analysis |
 | `dpi` | `int` | `300` | PDF rendering resolution (analyze pipeline) |
 
 #### `RetrievalConfig`
@@ -411,33 +412,33 @@ Async context manager: `async with RagServer(config) as rag:`
 |-------|------|---------|-------------|
 | `top_k` | `int` | `5` | Results returned |
 | `reranker` | `BaseReranking` | `None` | Cross-encoder reranking |
-| `query_rewriter` | `BaseQueryRewriter` | `None` | Pre-retrieval query rewriting |
+| `query_rewriter` | `BaseQueryRewriting` | `None` | Pre-retrieval query rewriting |
 | `parent_expansion` | `bool` | `True` | Return parent chunks when child chunks match |
 | `bm25_enabled` | `bool` | `False` | In-memory BM25 (deprecated when sparse_embeddings configured) |
 | `source_type_weights` | `dict[str, float]` | `None` | Score multipliers by source type |
 | `cross_reference_enrichment` | `bool` | `True` | Fetch cross-referenced pages (analyze pipeline) |
-| `enrich_lm_config` | `LanguageModelConfig` | `None` | LLM for query analysis |
-| `chunk_refiner` | `BaseChunkRefiner` | `None` | Post-retrieval chunk refinement |
+| `enrich_lm_config` | `LanguageModelClient` | `None` | LLM for query analysis |
+| `chunk_refiner` | `BaseChunkRefinement` | `None` | Post-retrieval chunk refinement |
 
 #### `GenerationConfig`
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `lm_config` | `LanguageModelConfig` | `None` | LLM config. Required for `query()` |
+| `lm_config` | `LanguageModelClient` | `None` | LLM config. Required for `query()` |
 | `system_prompt` | `str` | default | System prompt for generation |
 | `grounding_enabled` | `bool` | `False` | Score-based grounding gate |
 | `grounding_threshold` | `float` | `0.5` | Minimum retrieval score (0-1) |
 | `relevance_gate_enabled` | `bool` | `False` | LLM relevance gate (requires `grounding_enabled`) |
-| `relevance_gate_model` | `LanguageModelConfig` | `None` | LLM for relevance judgment |
+| `relevance_gate_model` | `LanguageModelClient` | `None` | LLM for relevance judgment |
 | `guiding_enabled` | `bool` | `False` | Clarification questions (requires `relevance_gate_enabled`) |
-| `step_lm_config` | `LanguageModelConfig` | `None` | LLM for step-by-step reasoning |
+| `step_lm_config` | `LanguageModelClient` | `None` | LLM for step-by-step reasoning |
 
 #### `TreeIndexingConfig`
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `enabled` | `bool` | `False` | Enable tree index building during ingestion |
-| `model` | `LanguageModelConfig` | `None` | LLM for TOC detection, structure extraction, summaries |
+| `model` | `LanguageModelClient` | `None` | LLM for TOC detection, structure extraction, summaries |
 | `toc_scan_pages` | `int` | `20` | Pages to scan for table of contents |
 | `max_pages_per_node` | `int` | `10` | Max pages before a node is split |
 | `max_tokens_per_node` | `int` | `20000` | Max tokens before a node is split |
@@ -449,24 +450,24 @@ Async context manager: `async with RagServer(config) as rag:`
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `enabled` | `bool` | `False` | Enable tree-based search at query time |
-| `model` | `LanguageModelConfig` | `None` | LLM for reasoning-based tree traversal |
+| `model` | `LanguageModelClient` | `None` | LLM for reasoning-based tree traversal |
 | `max_steps` | `int` | `5` | Max iterations in the tool-use loop |
 | `max_context_tokens` | `int` | `50000` | Budget for accumulated page content |
 
-#### `LanguageModelConfig`
+#### `LanguageModelClient`
 
 ```python
-from x64rag.common.language_model import LanguageModelConfig, LanguageModelClientConfig
+from x64rag.common.language_model import LanguageModelClient, LanguageModelProvider
 
 # Simple — single provider
-config = LanguageModelConfig(
-    client=LanguageModelClientConfig(provider="openai", model="gpt-4o", api_key="..."),
+config = LanguageModelClient(
+    provider=LanguageModelProvider(provider="openai", model="gpt-4o", api_key="..."),
 )
 
 # With fallback — auto-routes to fallback provider on failure
-config = LanguageModelConfig(
-    client=LanguageModelClientConfig(provider="anthropic", model="claude-haiku-4-5-20251001", api_key="..."),
-    fallback=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini", api_key="..."),
+config = LanguageModelClient(
+    provider=LanguageModelProvider(provider="anthropic", model="claude-haiku-4-5-20251001", api_key="..."),
+    fallback=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="..."),
     strategy="fallback",
     max_retries=3,
 )
@@ -474,17 +475,17 @@ config = LanguageModelConfig(
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `client` | `LanguageModelClientConfig` | required | Primary LLM client |
-| `fallback` | `LanguageModelClientConfig` | `None` | Fallback LLM client |
-| `max_retries` | `int` | `3` | Retry attempts per client (0-5) |
+| `provider` | `LanguageModelProvider` | required | Primary LLM provider |
+| `fallback` | `LanguageModelProvider` | `None` | Fallback LLM provider |
+| `max_retries` | `int` | `3` | Retry attempts per provider (0-5) |
 | `strategy` | `"primary_only" \| "fallback"` | `"primary_only"` | Routing strategy |
+| `max_tokens` | `int` | `4096` | Max output tokens |
+| `temperature` | `float` | `0.0` | Sampling temperature |
 | `boundary_api_key` | `str` | `None` | Boundary proxy API key |
 
-| Client Field | Type | Default | Description |
+| Provider Field | Type | Default | Description |
 |------|------|---------|-------------|
 | `provider` | `str` | required | Provider name (`"openai"`, `"anthropic"`, etc.) |
 | `model` | `str` | required | Model identifier |
 | `api_key` | `str` | `None` | API key (falls back to environment variable) |
-| `max_tokens` | `int` | `4096` | Max output tokens |
-| `temperature` | `float` | `0.0` | Sampling temperature |
 

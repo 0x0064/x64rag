@@ -16,11 +16,11 @@ Extract structured insights from text — intent, dimensions, entities, summarie
 from x64rag.reasoning import (
     AnalysisService, AnalysisConfig,
     DimensionDefinition, EntityTypeDefinition,
-    LanguageModelConfig, LanguageModelClientConfig,
+    LanguageModelClient, LanguageModelProvider,
 )
 
-lm_config = LanguageModelConfig(
-    client=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini", api_key="...")
+lm_config = LanguageModelClient(
+    provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="...")
 )
 
 analyzer = AnalysisService(lm_config=lm_config)
@@ -341,8 +341,6 @@ x64rag reasoning analyze "text" | jq .           # auto JSON when piped
 Override config from environment (useful for sandboxed environments):
 
 ```bash
-export X64RAG_PROVIDER=anthropic
-export X64RAG_MODEL=claude-sonnet-4-20250514
 export ANTHROPIC_API_KEY=sk-...
 x64rag reasoning analyze "text"
 ```
@@ -469,20 +467,20 @@ Steps: `AnalyzeStep`, `ClassifyStep`, `EvaluateStep`, `ComplianceStep`
 | `medium_threshold` | `float` | `0.5` | Score >= this is "medium" |
 | `max_text_length` | `int` | `3000` | Truncate input text |
 
-### `LanguageModelConfig`
+### `LanguageModelClient`
 
 Used by all services to configure BAML-based LLM calls with retry and fallback support.
 
 ```python
-from x64rag.common.language_model import LanguageModelConfig, LanguageModelClientConfig
+from x64rag.common.language_model import LanguageModelClient, LanguageModelProvider
 
-config = LanguageModelConfig(
-    client=LanguageModelClientConfig(provider="openai", model="gpt-4o", api_key="..."),
+config = LanguageModelClient(
+    provider=LanguageModelProvider(provider="openai", model="gpt-4o", api_key="..."),
 )
 
-config = LanguageModelConfig(
-    client=LanguageModelClientConfig(provider="anthropic", model="claude-haiku-4-5-20251001", api_key="..."),
-    fallback=LanguageModelClientConfig(provider="openai", model="gpt-4o-mini", api_key="..."),
+config = LanguageModelClient(
+    provider=LanguageModelProvider(provider="anthropic", model="claude-haiku-4-5-20251001", api_key="..."),
+    fallback=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="..."),
     strategy="fallback",
     max_retries=3,
 )
@@ -490,17 +488,17 @@ config = LanguageModelConfig(
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `client` | `LanguageModelClientConfig` | required | Primary LLM client |
-| `fallback` | `LanguageModelClientConfig` | `None` | Fallback LLM client |
-| `max_retries` | `int` | `3` | Retry attempts per client (0-5) |
+| `provider` | `LanguageModelProvider` | required | Primary LLM provider |
+| `fallback` | `LanguageModelProvider` | `None` | Fallback LLM provider |
+| `max_retries` | `int` | `3` | Retry attempts per provider (0-5) |
 | `strategy` | `"primary_only" \| "fallback"` | `"primary_only"` | Routing strategy |
+| `max_tokens` | `int` | `4096` | Max output tokens |
+| `temperature` | `float` | `0.0` | Sampling temperature |
 | `boundary_api_key` | `str` | `None` | BAML observability API key |
 
-| Client Field | Type | Default | Description |
+| Provider Field | Type | Default | Description |
 |------|------|---------|-------------|
 | `provider` | `str` | required | Provider name (`"openai"`, `"anthropic"`, etc.) |
 | `model` | `str` | required | Model identifier |
 | `api_key` | `str` | `None` | API key (falls back to environment variable) |
-| `max_tokens` | `int` | `4096` | Max output tokens |
-| `temperature` | `float` | `0.0` | Sampling temperature |
 
