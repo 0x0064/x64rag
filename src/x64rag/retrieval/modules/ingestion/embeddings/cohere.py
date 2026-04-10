@@ -1,10 +1,12 @@
 import cohere
 
+from x64rag.common.language_model import LanguageModelProvider
 
-class CohereEmbeddings:
-    def __init__(self, api_key: str, model: str = "embed-english-v3.0", **kwargs) -> None:
-        self._client = cohere.AsyncClientV2(api_key=api_key)
-        self._model = model
+
+class _CohereEmbeddings:
+    def __init__(self, provider: LanguageModelProvider) -> None:
+        self._client = cohere.AsyncClientV2(api_key=provider.api_key)
+        self._model = provider.model
         self._dimension: int | None = None
 
     @property

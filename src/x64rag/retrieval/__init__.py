@@ -42,13 +42,11 @@ from x64rag.retrieval.modules.ingestion.analyze.models import DiscoveredEntity a
 from x64rag.retrieval.modules.ingestion.analyze.models import DocumentSynthesis as DocumentSynthesis
 from x64rag.retrieval.modules.ingestion.analyze.models import PageAnalysis as PageAnalysis
 from x64rag.retrieval.modules.ingestion.base import BaseIngestionMethod as BaseIngestionMethod
-from x64rag.retrieval.modules.ingestion.embeddings.cohere import CohereEmbeddings as CohereEmbeddings
-from x64rag.retrieval.modules.ingestion.embeddings.openai import OpenAIEmbeddings as OpenAIEmbeddings
+from x64rag.retrieval.modules.ingestion.embeddings.facade import Embeddings as Embeddings
 from x64rag.retrieval.modules.ingestion.embeddings.sparse.base import BaseSparseEmbeddings as BaseSparseEmbeddings
 from x64rag.retrieval.modules.ingestion.embeddings.sparse.fastembed import (
     FastEmbedSparseEmbeddings as FastEmbedSparseEmbeddings,
 )
-from x64rag.retrieval.modules.ingestion.embeddings.voyage import VoyageEmbeddings as VoyageEmbeddings
 from x64rag.retrieval.modules.ingestion.methods.document import DocumentIngestion as DocumentIngestion
 from x64rag.retrieval.modules.ingestion.methods.graph import GraphIngestion as GraphIngestion
 from x64rag.retrieval.modules.ingestion.methods.tree import TreeIngestion as TreeIngestion
@@ -126,9 +124,7 @@ __all__ = [
     "DuplicateSourceError",
     "SourceNotFoundError",
     "ConfigurationError",
-    "OpenAIEmbeddings",
-    "VoyageEmbeddings",
-    "CohereEmbeddings",
+    "Embeddings",
     "BaseSparseEmbeddings",
     "FastEmbedSparseEmbeddings",
     "AnthropicVision",

@@ -1,10 +1,12 @@
 from openai import AsyncOpenAI
 
+from x64rag.common.language_model import LanguageModelProvider
 
-class OpenAIEmbeddings:
-    def __init__(self, api_key: str, model: str = "text-embedding-3-small", **kwargs) -> None:
-        self._client = AsyncOpenAI(api_key=api_key, max_retries=kwargs.pop("max_retries", 3))
-        self._model = model
+
+class _OpenAIEmbeddings:
+    def __init__(self, provider: LanguageModelProvider, max_retries: int = 3) -> None:
+        self._client = AsyncOpenAI(api_key=provider.api_key, max_retries=max_retries)
+        self._model = provider.model
         self._dimension: int | None = None
 
     @property

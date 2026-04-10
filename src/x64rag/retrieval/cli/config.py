@@ -8,10 +8,8 @@ from typing import Any
 from x64rag.retrieval.cli.constants import CONFIG_FILE, ENV_FILE, ConfigError, load_dotenv
 from x64rag.retrieval.common.language_model import LanguageModelClient, LanguageModelProvider
 from x64rag.retrieval.modules.ingestion.embeddings.base import BaseEmbeddings
-from x64rag.retrieval.modules.ingestion.embeddings.cohere import CohereEmbeddings
-from x64rag.retrieval.modules.ingestion.embeddings.openai import OpenAIEmbeddings
+from x64rag.retrieval.modules.ingestion.embeddings.facade import Embeddings
 from x64rag.retrieval.modules.ingestion.embeddings.sparse.fastembed import FastEmbedSparseEmbeddings
-from x64rag.retrieval.modules.ingestion.embeddings.voyage import VoyageEmbeddings
 from x64rag.retrieval.modules.ingestion.vision.anthropic import AnthropicVision
 from x64rag.retrieval.modules.ingestion.vision.openai import OpenAIVision
 from x64rag.retrieval.modules.retrieval.search.reranking.cohere import CohereReranking
@@ -70,11 +68,7 @@ def _build_embeddings(cfg: dict[str, Any]) -> BaseEmbeddings:
     api_key = _get_api_key(env_var, provider)
     model = cfg.get("model", _EMBEDDINGS_DEFAULTS[provider])
 
-    if provider == "openai":
-        return OpenAIEmbeddings(api_key=api_key, model=model)
-    if provider == "voyage":
-        return VoyageEmbeddings(api_key=api_key, model=model)
-    return CohereEmbeddings(api_key=api_key, model=model)
+    return Embeddings(LanguageModelProvider(provider=provider, model=model, api_key=api_key))
 
 
 _VISION_KEYS = {

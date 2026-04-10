@@ -1,10 +1,12 @@
 import voyageai
 
+from x64rag.common.language_model import LanguageModelProvider
 
-class VoyageEmbeddings:
-    def __init__(self, api_key: str, model: str = "voyage-3", **kwargs) -> None:
-        self._client = voyageai.AsyncClient(api_key=api_key)
-        self._model = model
+
+class _VoyageEmbeddings:
+    def __init__(self, provider: LanguageModelProvider) -> None:
+        self._client = voyageai.AsyncClient(api_key=provider.api_key)
+        self._model = provider.model
         self._dimension: int | None = None
 
     @property
