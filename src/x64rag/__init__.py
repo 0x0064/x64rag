@@ -1,4 +1,4 @@
-"""x64rag — Retrieval-Augmented Generation + Reasoning-Augmented Classification SDK."""
+"""x64rag — Retrieval-Augmented Generation + Reasoning services SDK."""
 
 from importlib.metadata import version
 
