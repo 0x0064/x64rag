@@ -18,10 +18,10 @@ class StepBackRewriting:
     the precise matches from the original query.
     """
 
-    lm_config: LanguageModelClient
+    lm_client: LanguageModelClient
 
     async def rewrite(self, query: str, conversation_context: str | None = None) -> list[str]:
-        registry = build_registry(self.lm_config)
+        registry = build_registry(self.lm_client)
         context_hint = f"\n\nConversation context: {conversation_context}" if conversation_context else ""
 
         try:

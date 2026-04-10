@@ -6,7 +6,7 @@ from x64rag.retrieval.common.language_model import LanguageModelClient, Language
 from x64rag.retrieval.modules.retrieval.judging import RetrievalJudgment
 
 
-def _make_lm_config():
+def _make_lm_client():
     return LanguageModelClient(provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini"))
 
 
@@ -14,7 +14,7 @@ class TestRetrievalJudgment:
     @pytest.fixture
     def judge(self):
         return RetrievalJudgment(
-            lm_config=_make_lm_config(),
+            lm_client=_make_lm_client(),
             knowledge_description="Industrial air filtration manuals",
         )
 

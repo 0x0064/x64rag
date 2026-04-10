@@ -17,15 +17,15 @@ logger = get_logger("generation")
 class GenerationService:
     def __init__(
         self,
-        lm_config: LanguageModelClient,
+        lm_client: LanguageModelClient,
         system_prompt: str,
         grounding_enabled: bool = False,
         grounding_threshold: float = 0.5,
         relevance_gate_enabled: bool = False,
         guiding_enabled: bool = False,
-        relevance_gate_lm_config: LanguageModelClient | None = None,
+        relevance_gate_lm_client: LanguageModelClient | None = None,
     ) -> None:
-        self._lm_config = lm_config
+        self._lm_client = lm_client
         self._system_prompt = system_prompt
         self._guiding_enabled = guiding_enabled
 
@@ -33,8 +33,8 @@ class GenerationService:
         self._score_gate = ScoreGate(threshold=grounding_threshold) if grounding_enabled else None
 
         self._relevance_gate: RelevanceGate | None = None
-        if relevance_gate_enabled and relevance_gate_lm_config and self._score_gate:
-            self._relevance_gate = RelevanceGate(lm_config=relevance_gate_lm_config, fallback_gate=self._score_gate)
+        if relevance_gate_enabled and relevance_gate_lm_client and self._score_gate:
+            self._relevance_gate = RelevanceGate(lm_client=relevance_gate_lm_client, fallback_gate=self._score_gate)
 
     @staticmethod
     def _format_history(history: list[tuple[str, str]] | None) -> str:
@@ -131,7 +131,7 @@ class GenerationService:
 
         logger.info("LLM generation: %d context chunks", len(relevant_chunks))
         try:
-            registry = build_registry(self._lm_config)
+            registry = build_registry(self._lm_client)
             answer = await b.GenerateAnswer(
                 system_prompt=active_system_prompt,
                 context=context,
@@ -190,7 +190,7 @@ class GenerationService:
 
         logger.info("LLM streaming: %d context chunks", len(relevant_chunks))
         try:
-            registry = build_registry(self._lm_config)
+            registry = build_registry(self._lm_client)
             stream = b.stream.GenerateAnswer(
                 system_prompt=active_system_prompt,
                 context=context,

@@ -69,7 +69,7 @@ class IngestionConfig:
     chunk_size: int = 500
     chunk_overlap: int = 50
     dpi: int = 300
-    lm_config: LanguageModelClient | None = None
+    lm_client: LanguageModelClient | None = None
     sparse_embeddings: BaseSparseEmbeddings | None = None
     parent_chunk_size: int = 0
     parent_chunk_overlap: int = 200
@@ -98,7 +98,7 @@ class RetrievalConfig:
     bm25_tokenizer: Callable[[str], list[str]] | None = None
     source_type_weights: dict[str, float] | None = None
     cross_reference_enrichment: bool = True
-    enrich_lm_config: LanguageModelClient | None = None
+    enrich_lm_client: LanguageModelClient | None = None
     parent_expansion: bool = True
     chunk_refiner: BaseChunkRefinement | None = None
 
@@ -109,14 +109,14 @@ class RetrievalConfig:
 
 @dataclass
 class GenerationConfig:
-    lm_config: LanguageModelClient | None = None
+    lm_client: LanguageModelClient | None = None
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
     grounding_enabled: bool = False
     grounding_threshold: float = 0.5
     relevance_gate_enabled: bool = False
     relevance_gate_model: LanguageModelClient | None = None
     guiding_enabled: bool = False
-    step_lm_config: LanguageModelClient | None = None
+    step_lm_client: LanguageModelClient | None = None
 
     def __post_init__(self) -> None:
         if self.grounding_threshold < 0 or self.grounding_threshold > 1:
@@ -256,8 +256,8 @@ class RagServer:
         if i.embeddings and not p.vector_store:
             raise ConfigurationError("embeddings requires vector_store")
 
-        if has_graph and not i.lm_config:
-            raise ConfigurationError("graph_store requires ingestion.lm_config for entity extraction")
+        if has_graph and not i.lm_client:
+            raise ConfigurationError("graph_store requires ingestion.lm_client for entity extraction")
 
         if cfg.tree_indexing.enabled and not p.metadata_store:
             raise ConfigurationError("tree_indexing requires metadata_store")
@@ -325,11 +325,11 @@ class RagServer:
 
         # Graph path
         if persistence.graph_store:
-            if ingestion.lm_config:
+            if ingestion.lm_client:
                 ingestion_methods.append(
                     GraphIngestion(
                         graph_store=persistence.graph_store,
-                        lm_config=ingestion.lm_config,
+                        lm_client=ingestion.lm_client,
                     )
                 )
             retrieval_methods.append(GraphRetrieval(graph_store=persistence.graph_store, weight=0.7))
@@ -397,7 +397,7 @@ class RagServer:
                 dpi=ingestion.dpi,
                 source_type_weights=retrieval.source_type_weights,
                 on_ingestion_complete=self._on_ingestion_complete,
-                lm_config=ingestion.lm_config,
+                lm_client=ingestion.lm_client,
                 graph_store=persistence.graph_store,
                 ingestion_methods=analyzed_methods,
             )
@@ -418,7 +418,7 @@ class RagServer:
             self._structured_retrieval = StructuredRetrievalService(
                 vector_store=persistence.vector_store,
                 embeddings=ingestion.embeddings,
-                lm_config=retrieval.enrich_lm_config,
+                lm_client=retrieval.enrich_lm_client,
                 top_k=retrieval.top_k,
                 enrich_cross_references=retrieval.cross_reference_enrichment,
             )
@@ -441,26 +441,26 @@ class RagServer:
                 logger.info("retrieval pipeline built for collection '%s'", coll_name)
 
         # Generation
-        if gen.lm_config:
-            relevance_gate_lm_config = gen.relevance_gate_model if gen.relevance_gate_enabled else None
+        if gen.lm_client:
+            relevance_gate_lm_client = gen.relevance_gate_model if gen.relevance_gate_enabled else None
             self._generation_service = GenerationService(
-                lm_config=gen.lm_config,
+                lm_client=gen.lm_client,
                 system_prompt=gen.system_prompt,
                 grounding_enabled=gen.grounding_enabled,
                 grounding_threshold=gen.grounding_threshold,
                 relevance_gate_enabled=gen.relevance_gate_enabled,
                 guiding_enabled=gen.guiding_enabled,
-                relevance_gate_lm_config=relevance_gate_lm_config,
+                relevance_gate_lm_client=relevance_gate_lm_client,
             )
             logger.info("generation: enabled")
         else:
             logger.info("generation: disabled (retrieval-only mode)")
 
-        if gen.step_lm_config:
-            self._step_service = StepGenerationService(lm_config=gen.step_lm_config)
+        if gen.step_lm_client:
+            self._step_service = StepGenerationService(lm_client=gen.step_lm_client)
             logger.info("step generation: enabled")
 
-        if gen.grounding_threshold > 0 and not gen.lm_config:
+        if gen.grounding_threshold > 0 and not gen.lm_client:
             raise ConfigurationError("generation provider required for grounding gate")
 
         self._knowledge_manager = KnowledgeManager(
@@ -700,7 +700,7 @@ class RagServer:
         """
         self._check_initialized()
         if not self._step_service:
-            raise RuntimeError("generate_step() requires step_lm_config in GenerationConfig")
+            raise RuntimeError("generate_step() requires step_lm_client in GenerationConfig")
 
         return await self._step_service.generate_step(
             query=query,
@@ -795,7 +795,7 @@ class RagServer:
             structured = StructuredRetrievalService(
                 vector_store=vector_store,
                 embeddings=ingestion.embeddings,
-                lm_config=retrieval.enrich_lm_config,
+                lm_client=retrieval.enrich_lm_client,
                 top_k=retrieval.top_k,
                 enrich_cross_references=retrieval.cross_reference_enrichment,
             )

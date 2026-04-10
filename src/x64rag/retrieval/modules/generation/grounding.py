@@ -37,8 +37,8 @@ class RelevanceGate:
     Falls back to ScoreGate on failure.
     """
 
-    def __init__(self, lm_config: LanguageModelClient, fallback_gate: ScoreGate) -> None:
-        self._registry = build_registry(lm_config)
+    def __init__(self, lm_client: LanguageModelClient, fallback_gate: ScoreGate) -> None:
+        self._registry = build_registry(lm_client)
         self._fallback = fallback_gate
 
     async def check(

@@ -20,13 +20,13 @@ class StructuredRetrievalService:
         self,
         vector_store: BaseVectorStore,
         embeddings: BaseEmbeddings,
-        lm_config: LanguageModelClient | None = None,
+        lm_client: LanguageModelClient | None = None,
         top_k: int = 5,
         enrich_cross_references: bool = True,
     ) -> None:
         self._vector_store = vector_store
         self._embeddings = embeddings
-        self._registry = build_registry(lm_config) if lm_config else None
+        self._registry = build_registry(lm_client) if lm_client else None
         self._top_k = top_k
         self._enrich = enrich_cross_references
 

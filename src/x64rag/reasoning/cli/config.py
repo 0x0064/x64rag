@@ -52,7 +52,7 @@ def _build_lm_provider(cfg: dict[str, Any]) -> LanguageModelProvider:
     )
 
 
-def build_lm_config(toml: dict[str, Any]) -> LanguageModelClient:
+def build_lm_client(toml: dict[str, Any]) -> LanguageModelClient:
     """Build LanguageModelClient from [language_model] section."""
     lm_cfg = toml.get("language_model", {})
     if not lm_cfg:
@@ -87,25 +87,25 @@ def build_lm_config(toml: dict[str, Any]) -> LanguageModelClient:
 def build_analysis_service(toml: dict[str, Any]) -> AnalysisService:
     from x64rag.reasoning.modules.analysis.service import AnalysisService as _AnalysisService
 
-    return _AnalysisService(lm_config=build_lm_config(toml))
+    return _AnalysisService(lm_client=build_lm_client(toml))
 
 
 def build_classification_service(toml: dict[str, Any]) -> ClassificationService:
     from x64rag.reasoning.modules.classification.service import ClassificationService as _ClassificationService
 
-    return _ClassificationService(lm_config=build_lm_config(toml))
+    return _ClassificationService(lm_client=build_lm_client(toml))
 
 
 def build_compliance_service(toml: dict[str, Any]) -> ComplianceService:
     from x64rag.reasoning.modules.compliance.service import ComplianceService as _ComplianceService
 
-    return _ComplianceService(lm_config=build_lm_config(toml))
+    return _ComplianceService(lm_client=build_lm_client(toml))
 
 
 def build_evaluation_service(toml: dict[str, Any]) -> EvaluationService:
     from x64rag.reasoning.modules.evaluation.service import EvaluationService as _EvaluationService
 
-    return _EvaluationService(lm_config=build_lm_config(toml))
+    return _EvaluationService(lm_client=build_lm_client(toml))
 
 
 def load_config(config_path: str | None = None) -> dict[str, Any]:

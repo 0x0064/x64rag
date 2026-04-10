@@ -6,7 +6,7 @@ from typing import Any
 import click
 
 from x64rag.reasoning.cli import cli, run_async
-from x64rag.reasoning.cli.config import build_lm_config, load_config
+from x64rag.reasoning.cli.config import build_lm_client, load_config
 from x64rag.reasoning.cli.constants import CONFIG_FILE, ENV_FILE, ConfigError
 from x64rag.reasoning.cli.output import OutputMode, print_error, print_json
 from x64rag.reasoning.common.language_model import LanguageModelClient
@@ -34,16 +34,16 @@ def status(ctx: click.Context) -> None:
             click.echo(".env: not found (API keys must be in environment)")
 
     try:
-        lm_config = build_lm_config(toml)
+        lm_client = build_lm_client(toml)
     except ConfigError as e:
         print_error(str(e), mode)
         raise SystemExit(1) from None
 
     if mode == OutputMode.PRETTY:
-        click.echo(f"Provider: {lm_config.provider.provider}")
-        click.echo(f"Model: {lm_config.provider.model}")
-        if lm_config.fallback:
-            click.echo(f"Fallback: {lm_config.fallback.provider}/{lm_config.fallback.model}")
+        click.echo(f"Provider: {lm_client.provider.provider}")
+        click.echo(f"Model: {lm_client.provider.model}")
+        if lm_client.fallback:
+            click.echo(f"Fallback: {lm_client.fallback.provider}/{lm_client.fallback.model}")
         if toml.get("embeddings"):
             emb = toml["embeddings"]
             click.echo(f"Embeddings: {emb.get('provider', 'openai')}/{emb.get('model', 'default')}")
@@ -51,14 +51,14 @@ def status(ctx: click.Context) -> None:
             vs = toml["vector_store"]
             click.echo(f"Vector store: {vs.get('provider', 'qdrant')} @ {vs.get('url', 'localhost')}")
 
-    run_async(_test_connection(lm_config, toml, mode))
+    run_async(_test_connection(lm_client, toml, mode))
 
 
-async def _test_connection(lm_config: LanguageModelClient, toml: dict[str, Any], mode: OutputMode) -> None:
+async def _test_connection(lm_client: LanguageModelClient, toml: dict[str, Any], mode: OutputMode) -> None:
     from x64rag.reasoning.modules.analysis.service import AnalysisService
 
     try:
-        service = AnalysisService(lm_config=lm_config)
+        service = AnalysisService(lm_client=lm_client)
         await service.analyze("test", config=None)
         if mode == OutputMode.PRETTY:
             click.echo("LLM: connected")
@@ -66,8 +66,8 @@ async def _test_connection(lm_config: LanguageModelClient, toml: dict[str, Any],
         else:
             status_data: dict[str, Any] = {
                 "status": "ok",
-                "provider": lm_config.provider.provider,
-                "model": lm_config.provider.model,
+                "provider": lm_client.provider.provider,
+                "model": lm_client.provider.model,
             }
             if toml.get("embeddings"):
                 status_data["embeddings"] = toml["embeddings"].get("provider", "openai")

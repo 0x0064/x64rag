@@ -16,7 +16,7 @@ from x64rag.reasoning.modules.evaluation.models import (
 from x64rag.reasoning.modules.evaluation.service import EvaluationService
 
 
-def _lm_config() -> LanguageModelClient:
+def _lm_client() -> LanguageModelClient:
     return LanguageModelClient(
         provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="test-key"),
     )
@@ -64,7 +64,7 @@ async def test_evaluate_similarity_only():
 async def test_evaluate_judge_only(mock_b):
     """Judge strategy returns LLM score without embedding similarity."""
     mock_b.JudgeOutput = AsyncMock(return_value=_mock_judge_result())
-    service = EvaluationService(embeddings=_MockEmbeddings(), lm_config=_lm_config())
+    service = EvaluationService(embeddings=_MockEmbeddings(), lm_client=_lm_client())
     result = await service.evaluate(
         EvaluationPair(generated="answer", reference="reference"),
         config=EvaluationConfig(
@@ -85,7 +85,7 @@ async def test_evaluate_judge_only(mock_b):
 async def test_evaluate_combined(mock_b):
     """Combined strategy returns both similarity and judge scores."""
     mock_b.JudgeOutput = AsyncMock(return_value=_mock_judge_result())
-    service = EvaluationService(embeddings=_MockEmbeddings(), lm_config=_lm_config())
+    service = EvaluationService(embeddings=_MockEmbeddings(), lm_client=_lm_client())
     result = await service.evaluate(
         EvaluationPair(generated="answer", reference="reference"),
         config=EvaluationConfig(strategy="combined"),

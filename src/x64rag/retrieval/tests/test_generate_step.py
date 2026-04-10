@@ -12,14 +12,14 @@ def _make_chunk(content: str) -> RetrievedChunk:
     return RetrievedChunk(chunk_id="c1", source_id="s1", content=content, score=0.9, source_metadata={"name": "Test"})
 
 
-def _make_lm_config():
+def _make_lm_client():
     return LanguageModelClient(provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini"))
 
 
 class TestStepGenerationService:
     @pytest.fixture
     def service(self):
-        return StepGenerationService(lm_config=_make_lm_config())
+        return StepGenerationService(lm_client=_make_lm_client())
 
     async def test_generates_intermediate_step(self, service):
         mock_result = AsyncMock()

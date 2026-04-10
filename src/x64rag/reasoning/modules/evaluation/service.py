@@ -19,10 +19,10 @@ class EvaluationService:
     def __init__(
         self,
         embeddings: BaseEmbeddings | None = None,
-        lm_config: LanguageModelClient | None = None,
+        lm_client: LanguageModelClient | None = None,
     ) -> None:
         self._embeddings = embeddings
-        self._registry = build_registry(lm_config) if lm_config else None
+        self._registry = build_registry(lm_client) if lm_client else None
 
     def _compute_quality_band(self, score: float, cfg: EvaluationConfig) -> str:
         if score >= cfg.high_threshold:
@@ -51,7 +51,7 @@ class EvaluationService:
 
         if cfg.strategy in ("judge", "combined"):
             if not self._registry:
-                raise EvaluationError("Judge strategy requires lm_config")
+                raise EvaluationError("Judge strategy requires lm_client")
             dim_strings = [d.name for d in cfg.dimensions] if cfg.dimensions else []
             judge_score, judge_reasoning, dimension_scores = await llm_judge(
                 pair.generated,

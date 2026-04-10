@@ -20,8 +20,8 @@ class AbstractiveRefinement:
     dropped since the LLM has already fused and compressed all content.
     """
 
-    def __init__(self, lm_config: LanguageModelClient, max_output_tokens: int = 1024) -> None:
-        self._lm_config = lm_config
+    def __init__(self, lm_client: LanguageModelClient, max_output_tokens: int = 1024) -> None:
+        self._lm_client = lm_client
         self._max_output_tokens = max_output_tokens
 
     async def refine(self, query: str, chunks: list[RetrievedChunk]) -> list[RetrievedChunk]:
@@ -31,7 +31,7 @@ class AbstractiveRefinement:
         passage_parts = [f"[{i}] {format_chunk_header(chunk)}\n{chunk.content}" for i, chunk in enumerate(chunks)]
         passages = "\n\n".join(passage_parts)
 
-        registry = build_registry(self._lm_config)
+        registry = build_registry(self._lm_client)
 
         try:
             result = await b.CompressRetrievedContext(

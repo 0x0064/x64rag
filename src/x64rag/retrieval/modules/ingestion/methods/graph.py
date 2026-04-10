@@ -36,10 +36,10 @@ class GraphIngestion:
     def __init__(
         self,
         graph_store: BaseGraphStore,
-        lm_config: LanguageModelClient | None = None,
+        lm_client: LanguageModelClient | None = None,
     ) -> None:
         self._store = graph_store
-        self._registry = build_registry(lm_config) if lm_config else None
+        self._registry = build_registry(lm_client) if lm_client else None
 
     @property
     def name(self) -> str:
@@ -60,7 +60,7 @@ class GraphIngestion:
         pages: list[ParsedPage] | None = None,
     ) -> None:
         if not self._registry:
-            logger.warning("graph ingestion skipped — no lm_config provided")
+            logger.warning("graph ingestion skipped — no lm_client provided")
             return
 
         start = time.perf_counter()

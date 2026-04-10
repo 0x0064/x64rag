@@ -18,7 +18,7 @@ from x64rag.reasoning.modules.evaluation.models import (
 from x64rag.reasoning.modules.evaluation.service import EvaluationService
 
 
-def _lm_config() -> LanguageModelClient:
+def _lm_client() -> LanguageModelClient:
     return LanguageModelClient(
         provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="test-key"),
     )
@@ -102,9 +102,9 @@ async def test_similarity_requires_embeddings():
         )
 
 
-async def test_judge_requires_lm_config():
+async def test_judge_requires_lm_client():
     service = EvaluationService()
-    with pytest.raises(EvaluationError, match="requires lm_config"):
+    with pytest.raises(EvaluationError, match="requires lm_client"):
         await service.evaluate(
             EvaluationPair(generated="a", reference="b"),
             config=EvaluationConfig(strategy="judge"),
@@ -130,7 +130,7 @@ async def test_evaluate_batch_similarity():
 @patch("x64rag.reasoning.modules.evaluation.metrics.b")
 async def test_evaluate_batch_combined(mock_b):
     mock_b.JudgeOutput = AsyncMock(return_value=_mock_judge_result())
-    service = EvaluationService(embeddings=_MockEmbeddings(), lm_config=_lm_config())
+    service = EvaluationService(embeddings=_MockEmbeddings(), lm_client=_lm_client())
     pairs = [
         EvaluationPair(generated="a", reference="b"),
         EvaluationPair(generated="c", reference="d"),
@@ -144,7 +144,7 @@ async def test_evaluate_batch_combined(mock_b):
 @patch("x64rag.reasoning.modules.evaluation.metrics.b")
 async def test_evaluate_batch_judge_only(mock_b):
     mock_b.JudgeOutput = AsyncMock(return_value=_mock_judge_result(score=0.6))
-    service = EvaluationService(embeddings=_MockEmbeddings(), lm_config=_lm_config())
+    service = EvaluationService(embeddings=_MockEmbeddings(), lm_client=_lm_client())
     pairs = [EvaluationPair(generated="a", reference="b")]
     report = await service.evaluate_batch(pairs, config=EvaluationConfig(strategy="judge"))
     assert report.mean_similarity == 0.0

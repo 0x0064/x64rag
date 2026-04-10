@@ -10,8 +10,8 @@ logger = get_logger(__name__)
 
 
 class _LLMReranking:
-    def __init__(self, lm_config: LanguageModelClient) -> None:
-        self._registry = build_registry(lm_config)
+    def __init__(self, lm_client: LanguageModelClient) -> None:
+        self._registry = build_registry(lm_client)
 
     async def rerank(self, query: str, results: list[RetrievedChunk], top_k: int = 5) -> list[RetrievedChunk]:
         if not results:

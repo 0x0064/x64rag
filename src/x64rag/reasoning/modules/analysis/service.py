@@ -96,8 +96,8 @@ def _parse_hints(raw: list) -> list[RetrievalHint]:
 class AnalysisService:
     """Extract structured insights from text or conversation threads."""
 
-    def __init__(self, lm_config: LanguageModelClient) -> None:
-        self._registry = build_registry(lm_config)
+    def __init__(self, lm_client: LanguageModelClient) -> None:
+        self._registry = build_registry(lm_client)
 
     async def analyze(
         self,

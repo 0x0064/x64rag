@@ -71,11 +71,11 @@ class LLMJudgment:
 
     name: str = "llm_judge"
 
-    def __init__(self, lm_config: LanguageModelClient) -> None:
-        self._lm_config = lm_config
+    def __init__(self, lm_client: LanguageModelClient) -> None:
+        self._lm_client = lm_client
 
     async def score(self, prediction: str, references: list[str], query: str = "") -> float:
-        registry = build_registry(self._lm_config)
+        registry = build_registry(self._lm_client)
         best_score = 0.0
 
         for ref in references:

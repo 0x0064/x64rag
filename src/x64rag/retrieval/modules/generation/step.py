@@ -14,8 +14,8 @@ logger = get_logger("generation/step")
 class StepGenerationService:
     """Single reasoning step generation for iterative retrieval loops."""
 
-    def __init__(self, lm_config: LanguageModelClient) -> None:
-        self._lm_config = lm_config
+    def __init__(self, lm_client: LanguageModelClient) -> None:
+        self._lm_client = lm_client
 
     async def generate_step(
         self,
@@ -30,7 +30,7 @@ class StepGenerationService:
         chunk_context = chunks_to_context(chunks) if chunks else "(No context retrieved)"
         prior_reasoning = context or ""
 
-        registry = build_registry(self._lm_config)
+        registry = build_registry(self._lm_client)
 
         try:
             result = await b.GenerateReasoningStep(

@@ -58,7 +58,7 @@ async def test_concurrent_propagates_errors():
         await run_concurrent([1], fail, concurrency=1)
 
 
-def test_lm_config_valid_primary_only():
+def test_lm_client_valid_primary_only():
     config = LanguageModelClient(
         provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini"),
     )
@@ -66,7 +66,7 @@ def test_lm_config_valid_primary_only():
     assert config.max_retries == 3
 
 
-def test_lm_config_valid_fallback():
+def test_lm_client_valid_fallback():
     config = LanguageModelClient(
         provider=LanguageModelProvider(provider="openai", model="gpt-4o"),
         fallback=LanguageModelProvider(provider="anthropic", model="claude-sonnet-4-20250514"),
@@ -75,7 +75,7 @@ def test_lm_config_valid_fallback():
     assert config.fallback is not None
 
 
-def test_lm_config_invalid_strategy():
+def test_lm_client_invalid_strategy():
     with pytest.raises(ConfigurationError, match="Invalid strategy"):
         LanguageModelClient(
             provider=LanguageModelProvider(provider="openai", model="gpt-4o"),
@@ -83,7 +83,7 @@ def test_lm_config_invalid_strategy():
         )
 
 
-def test_lm_config_max_retries_negative():
+def test_lm_client_max_retries_negative():
     with pytest.raises(ConfigurationError, match="max_retries"):
         LanguageModelClient(
             provider=LanguageModelProvider(provider="openai", model="gpt-4o"),
@@ -91,7 +91,7 @@ def test_lm_config_max_retries_negative():
         )
 
 
-def test_lm_config_max_retries_exceeds_limit():
+def test_lm_client_max_retries_exceeds_limit():
     with pytest.raises(ConfigurationError, match="max_retries"):
         LanguageModelClient(
             provider=LanguageModelProvider(provider="openai", model="gpt-4o"),
@@ -99,7 +99,7 @@ def test_lm_config_max_retries_exceeds_limit():
         )
 
 
-def test_lm_config_fallback_strategy_without_fallback():
+def test_lm_client_fallback_strategy_without_fallback():
     with pytest.raises(ConfigurationError, match="requires a fallback"):
         LanguageModelClient(
             provider=LanguageModelProvider(provider="openai", model="gpt-4o"),

@@ -18,7 +18,7 @@ from x64rag.reasoning.modules.analysis.models import (
 from x64rag.reasoning.modules.analysis.service import AnalysisService
 
 
-def _lm_config() -> LanguageModelClient:
+def _lm_client() -> LanguageModelClient:
     return LanguageModelClient(
         provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="test-key"),
     )
@@ -67,7 +67,7 @@ def _mock_thread_result(
 async def test_analyze_minimal(mock_b):
     """Analyze with no config returns intent and confidence only."""
     mock_b.AnalyzeText = AsyncMock(return_value=_mock_text_result())
-    service = AnalysisService(lm_config=_lm_config())
+    service = AnalysisService(lm_client=_lm_client())
     result = await service.analyze("test text")
     assert isinstance(result, AnalysisResult)
     assert result.primary_intent == "delivery inquiry"
@@ -89,7 +89,7 @@ async def test_analyze_with_dimensions(mock_b):
             ]
         )
     )
-    service = AnalysisService(lm_config=_lm_config())
+    service = AnalysisService(lm_client=_lm_client())
     result = await service.analyze(
         "my order is late",
         config=AnalysisConfig(
@@ -116,7 +116,7 @@ async def test_analyze_with_entities(mock_b):
             ]
         )
     )
-    service = AnalysisService(lm_config=_lm_config())
+    service = AnalysisService(lm_client=_lm_client())
     result = await service.analyze(
         "my order ORD-123 is late",
         config=AnalysisConfig(entity_types=[EntityTypeDefinition("order_id", "Order identifier")]),
@@ -130,7 +130,7 @@ async def test_analyze_with_entities(mock_b):
 async def test_analyze_with_summary(mock_b):
     """Analyze with summarize=True returns summary."""
     mock_b.AnalyzeText = AsyncMock(return_value=_mock_text_result(summary="Customer reports delayed delivery"))
-    service = AnalysisService(lm_config=_lm_config())
+    service = AnalysisService(lm_client=_lm_client())
     result = await service.analyze("my order is late", config=AnalysisConfig(summarize=True))
     assert result.summary == "Customer reports delayed delivery"
 
@@ -150,7 +150,7 @@ async def test_analyze_with_retrieval_hints(mock_b):
             ]
         )
     )
-    service = AnalysisService(lm_config=_lm_config())
+    service = AnalysisService(lm_client=_lm_client())
     result = await service.analyze(
         "my order is late",
         config=AnalysisConfig(
@@ -178,7 +178,7 @@ async def test_analyze_context_with_tracking(mock_b):
             ]
         )
     )
-    service = AnalysisService(lm_config=_lm_config())
+    service = AnalysisService(lm_client=_lm_client())
     messages = [
         Message(text="where is my order?", role="customer"),
         Message(text="let me check", role="agent"),
@@ -200,7 +200,7 @@ async def test_analyze_context_with_tracking(mock_b):
 async def test_analyze_context_without_tracking(mock_b):
     """Analyze thread without tracking still returns base analysis."""
     mock_b.AnalyzeContext = AsyncMock(return_value=_mock_thread_result())
-    service = AnalysisService(lm_config=_lm_config())
+    service = AnalysisService(lm_client=_lm_client())
     messages = [Message(text="hello", role="customer")]
     result = await service.analyze_context(messages)
     assert result.primary_intent == "order complaint"
@@ -211,7 +211,7 @@ async def test_analyze_context_without_tracking(mock_b):
 async def test_analyze_batch(mock_b):
     """Batch analysis runs concurrently and returns ordered results."""
     mock_b.AnalyzeText = AsyncMock(return_value=_mock_text_result())
-    service = AnalysisService(lm_config=_lm_config())
+    service = AnalysisService(lm_client=_lm_client())
     results = await service.analyze_batch(["text 1", "text 2", "text 3"])
     assert len(results) == 3
     assert all(isinstance(r, AnalysisResult) for r in results)
@@ -221,7 +221,7 @@ async def test_analyze_batch(mock_b):
 async def test_analyze_truncates_text(mock_b):
     """Text longer than max_text_length is truncated."""
     mock_b.AnalyzeText = AsyncMock(return_value=_mock_text_result())
-    service = AnalysisService(lm_config=_lm_config())
+    service = AnalysisService(lm_client=_lm_client())
     long_text = "x" * 5000
     await service.analyze(long_text, config=AnalysisConfig(max_text_length=100))
     call_args = mock_b.AnalyzeText.call_args
@@ -232,7 +232,7 @@ async def test_analyze_truncates_text(mock_b):
 async def test_analyze_raises_analysis_error(mock_b):
     """Service wraps unexpected exceptions in AnalysisError."""
     mock_b.AnalyzeText = AsyncMock(side_effect=RuntimeError("boom"))
-    service = AnalysisService(lm_config=_lm_config())
+    service = AnalysisService(lm_client=_lm_client())
     with pytest.raises(AnalysisError, match="Analysis failed"):
         await service.analyze("test")
 

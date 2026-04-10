@@ -19,7 +19,7 @@ def _make_chunk(content: str, chunk_id: str = "c1", page_number: int | None = 1)
     )
 
 
-def _make_lm_config():
+def _make_lm_client():
     return LanguageModelClient(provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini"))
 
 
@@ -58,7 +58,7 @@ class TestExtractiveRefinement:
 
 class TestAbstractiveRefinement:
     async def test_empty_chunks(self):
-        refiner = AbstractiveRefinement(lm_config=_make_lm_config())
+        refiner = AbstractiveRefinement(lm_client=_make_lm_client())
         result = await refiner.refine("query", [])
         assert result == []
 
@@ -75,7 +75,7 @@ class TestAbstractiveRefinement:
             "x64rag.retrieval.modules.retrieval.refinement.abstractive.b.CompressRetrievedContext",
             return_value=mock_result,
         ):
-            refiner = AbstractiveRefinement(lm_config=_make_lm_config())
+            refiner = AbstractiveRefinement(lm_client=_make_lm_client())
             result = await refiner.refine("What is the pressure drop?", chunks)
 
         assert len(result) == 1
@@ -90,7 +90,7 @@ class TestAbstractiveRefinement:
             "x64rag.retrieval.modules.retrieval.refinement.abstractive.b.CompressRetrievedContext",
             side_effect=Exception("LLM error"),
         ):
-            refiner = AbstractiveRefinement(lm_config=_make_lm_config())
+            refiner = AbstractiveRefinement(lm_client=_make_lm_client())
             result = await refiner.refine("query", chunks)
 
         assert len(result) == 1
@@ -106,7 +106,7 @@ class TestAbstractiveRefinement:
             "x64rag.retrieval.modules.retrieval.refinement.abstractive.b.CompressRetrievedContext",
             return_value=mock_result,
         ):
-            refiner = AbstractiveRefinement(lm_config=_make_lm_config())
+            refiner = AbstractiveRefinement(lm_client=_make_lm_client())
             result = await refiner.refine("query", chunks)
 
         assert len(result) == 1

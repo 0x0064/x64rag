@@ -134,7 +134,7 @@ def _build_query_rewriter(cfg: dict[str, Any]):
         raise ConfigError(f"Unknown rewriter provider: {provider!r}. Supported: {', '.join(_GENERATION_KEYS)}")
     api_key = _get_api_key(env_var, provider)
 
-    lm_config = LanguageModelClient(
+    lm_client = LanguageModelClient(
         provider=LanguageModelProvider(provider=provider, model=model, api_key=api_key),
     )
 
@@ -146,7 +146,7 @@ def _build_query_rewriter(cfg: dict[str, Any]):
     rewriter_cls = rewriters.get(rewriter)
     if rewriter_cls is None:
         raise ConfigError(f"Unknown rewriter: {rewriter!r}. Supported: {', '.join(rewriters)}")
-    return rewriter_cls(lm_config=lm_config)
+    return rewriter_cls(lm_client=lm_client)
 
 
 _GENERATION_KEYS = {
@@ -171,7 +171,7 @@ def _build_generation_config(cfg: dict[str, Any]) -> GenerationConfig:
     api_key = _get_api_key(env_var, provider)
     model = cfg.get("model", _GENERATION_DEFAULTS[provider])
 
-    lm_config = LanguageModelClient(
+    lm_client = LanguageModelClient(
         provider=LanguageModelProvider(
             provider=provider,
             model=model,
@@ -192,7 +192,7 @@ def _build_generation_config(cfg: dict[str, Any]) -> GenerationConfig:
         )
 
     return GenerationConfig(
-        lm_config=lm_config,
+        lm_client=lm_client,
         system_prompt=cfg.get("system_prompt", GenerationConfig.system_prompt),
         grounding_enabled=cfg.get("grounding_enabled", False),
         grounding_threshold=cfg.get("grounding_threshold", 0.5),

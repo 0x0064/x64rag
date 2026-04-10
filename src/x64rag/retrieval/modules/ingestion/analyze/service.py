@@ -48,7 +48,7 @@ class AnalyzedIngestionService:
         dpi: int = 300,
         source_type_weights: dict[str, float] | None = None,
         on_ingestion_complete: Callable[[str | None], Awaitable[None]] | None = None,
-        lm_config: LanguageModelClient | None = None,
+        lm_client: LanguageModelClient | None = None,
         graph_store: BaseGraphStore | None = None,
         ingestion_methods: list | None = None,
     ) -> None:
@@ -60,7 +60,7 @@ class AnalyzedIngestionService:
         self._dpi = dpi
         self._source_type_weights = source_type_weights or {}
         self._on_ingestion_complete = on_ingestion_complete
-        self._registry: ClientRegistry | None = build_registry(lm_config) if lm_config else None
+        self._registry: ClientRegistry | None = build_registry(lm_client) if lm_client else None
         self._graph_store = graph_store
         self._ingestion_methods = ingestion_methods or []
 
@@ -287,7 +287,7 @@ class AnalyzedIngestionService:
             raise ConfigurationError("vision provider required for structured PDF analysis")
         if not self._registry:
             raise ConfigurationError(
-                "IngestionConfig.lm_config is required for structured PDF analysis "
+                "IngestionConfig.lm_client is required for structured PDF analysis "
                 "(used by AnalyzePage and SynthesizeDocument BAML functions). "
                 "Provide a LanguageModelClient with your LLM provider and API key."
             )
@@ -354,7 +354,7 @@ class AnalyzedIngestionService:
         """Use LLM to find cross-page relationships in PDF analyses."""
         if not self._registry:
             raise ConfigurationError(
-                "IngestionConfig.lm_config is required for PDF synthesis "
+                "IngestionConfig.lm_client is required for PDF synthesis "
                 "(used by SynthesizeDocument BAML function). "
                 "Provide a LanguageModelClient with your LLM provider and API key."
             )

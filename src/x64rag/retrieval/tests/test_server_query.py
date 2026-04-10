@@ -161,7 +161,7 @@ class TestServerGenerateStep:
 
     async def test_generate_step_without_service_raises(self):
         server = _make_server()
-        with pytest.raises(RuntimeError, match="step_lm_config"):
+        with pytest.raises(RuntimeError, match="step_lm_client"):
             await server.generate_step("query", [])
 
 

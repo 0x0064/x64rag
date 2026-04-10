@@ -21,11 +21,11 @@ class MultiQueryRewriting:
     via reciprocal rank fusion.
     """
 
-    lm_config: LanguageModelClient
+    lm_client: LanguageModelClient
     num_variants: int = DEFAULT_NUM_VARIANTS
 
     async def rewrite(self, query: str, conversation_context: str | None = None) -> list[str]:
-        registry = build_registry(self.lm_config)
+        registry = build_registry(self.lm_client)
         context_hint = f"\n\nConversation context: {conversation_context}" if conversation_context else ""
 
         try:

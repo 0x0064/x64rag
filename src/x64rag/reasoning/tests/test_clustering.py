@@ -30,7 +30,7 @@ class _MockEmbeddings:
         return 16
 
 
-def _lm_config() -> LanguageModelClient:
+def _lm_client() -> LanguageModelClient:
     return LanguageModelClient(
         provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="test-key"),
     )
@@ -156,7 +156,7 @@ async def test_cluster_knowledge_too_few_raises():
 @patch("x64rag.reasoning.modules.clustering.labeling.b")
 async def test_cluster_texts_with_labels(mock_b):
     mock_b.LabelCluster = AsyncMock(return_value=SimpleNamespace(label="auto-label"))
-    service = ClusteringService(embeddings=_MockEmbeddings(), lm_config=_lm_config())
+    service = ClusteringService(embeddings=_MockEmbeddings(), lm_client=_lm_client())
     texts = [f"text {i}" for i in range(6)]
     result = await service.cluster_texts(texts, config=ClusteringConfig(n_clusters=2, generate_labels=True))
     assert all(c.label == "auto-label" for c in result.clusters)

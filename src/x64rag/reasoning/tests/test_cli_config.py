@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import pytest
 
-from x64rag.reasoning.cli.config import build_lm_config, load_config
+from x64rag.reasoning.cli.config import build_lm_client, load_config
 from x64rag.reasoning.cli.constants import ConfigError, load_dotenv
 
 
@@ -68,7 +68,7 @@ class TestLoadConfig:
 
         toml = load_config(str(config))
         with pytest.raises(ConfigError, match="language_model"):
-            build_lm_config(toml)
+            build_lm_client(toml)
 
     def test_unknown_provider_raises(self, tmp_path):
         config = tmp_path / "config.toml"
@@ -78,7 +78,7 @@ class TestLoadConfig:
 
         toml = load_config(str(config))
         with pytest.raises(ConfigError, match="Unknown language model"):
-            build_lm_config(toml)
+            build_lm_client(toml)
 
     def test_fallback_config(self, tmp_path):
         config = tmp_path / "config.toml"
@@ -93,8 +93,8 @@ class TestLoadConfig:
             os.environ.pop("ANTHROPIC_API_KEY", None)
             os.environ.pop("OPENAI_API_KEY", None)
             toml = load_config(str(config))
-            lm_config = build_lm_config(toml)
+            lm_client = build_lm_client(toml)
 
-        assert lm_config.strategy == "fallback"
-        assert lm_config.fallback is not None
-        assert lm_config.fallback.provider == "openai"
+        assert lm_client.strategy == "fallback"
+        assert lm_client.fallback is not None
+        assert lm_client.fallback.provider == "openai"

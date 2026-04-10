@@ -18,7 +18,7 @@ from x64rag.reasoning.modules.classification.service import ClassificationServic
 from x64rag.reasoning.modules.classification.strategies import format_categories, format_category_sets
 
 
-def _lm_config() -> LanguageModelClient:
+def _lm_client() -> LanguageModelClient:
     return LanguageModelClient(
         provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="test-key"),
     )
@@ -74,7 +74,7 @@ class _MockVectorStore:
 @patch("x64rag.reasoning.modules.classification.strategies.b")
 async def test_llm_classify_single(mock_b):
     mock_b.ClassifyText = AsyncMock(return_value=_mock_classify_result())
-    service = ClassificationService(lm_config=_lm_config())
+    service = ClassificationService(lm_client=_lm_client())
     result = await service.classify("where is my order", _categories())
     assert result.category == "shipping"
     assert result.confidence == pytest.approx(0.9)
@@ -85,7 +85,7 @@ async def test_llm_classify_single(mock_b):
 @patch("x64rag.reasoning.modules.classification.strategies.b")
 async def test_llm_classify_case_insensitive_fallback(mock_b):
     mock_b.ClassifyText = AsyncMock(return_value=_mock_classify_result(category="SHIPPING"))
-    service = ClassificationService(lm_config=_lm_config())
+    service = ClassificationService(lm_client=_lm_client())
     result = await service.classify("test", _categories())
     assert result.category == "shipping"
 
@@ -93,7 +93,7 @@ async def test_llm_classify_case_insensitive_fallback(mock_b):
 @patch("x64rag.reasoning.modules.classification.strategies.b")
 async def test_llm_classify_invalid_category_raises(mock_b):
     mock_b.ClassifyText = AsyncMock(return_value=_mock_classify_result(category="NONEXISTENT"))
-    service = ClassificationService(lm_config=_lm_config())
+    service = ClassificationService(lm_client=_lm_client())
     with pytest.raises(ClassificationError, match="invalid category"):
         await service.classify("test", _categories())
 
@@ -101,21 +101,21 @@ async def test_llm_classify_invalid_category_raises(mock_b):
 @patch("x64rag.reasoning.modules.classification.strategies.b")
 async def test_llm_classify_wraps_exceptions(mock_b):
     mock_b.ClassifyText = AsyncMock(side_effect=RuntimeError("api down"))
-    service = ClassificationService(lm_config=_lm_config())
+    service = ClassificationService(lm_client=_lm_client())
     with pytest.raises(ClassificationError, match="Classification failed"):
         await service.classify("test", _categories())
 
 
-async def test_classify_without_lm_config_raises():
+async def test_classify_without_lm_client_raises():
     service = ClassificationService()
-    with pytest.raises(ClassificationError, match="requires lm_config"):
+    with pytest.raises(ClassificationError, match="requires lm_client"):
         await service.classify("test", _categories())
 
 
 @patch("x64rag.reasoning.modules.classification.strategies.b")
 async def test_classify_batch_llm(mock_b):
     mock_b.ClassifyText = AsyncMock(return_value=_mock_classify_result())
-    service = ClassificationService(lm_config=_lm_config())
+    service = ClassificationService(lm_client=_lm_client())
     results = await service.classify_batch(["text 1", "text 2", "text 3"], _categories())
     assert len(results) == 3
     assert all(r.strategy_used == "llm" for r in results)
@@ -124,7 +124,7 @@ async def test_classify_batch_llm(mock_b):
 @patch("x64rag.reasoning.modules.classification.strategies.b")
 async def test_classify_batch_with_metadata(mock_b):
     mock_b.ClassifyText = AsyncMock(return_value=_mock_classify_result())
-    service = ClassificationService(lm_config=_lm_config())
+    service = ClassificationService(lm_client=_lm_client())
     metadata = [{"source": "email"}, {"source": "chat"}]
     results = await service.classify_batch(["t1", "t2"], _categories(), metadata=metadata)
     assert results[0].metadata == {"source": "email"}
@@ -132,7 +132,7 @@ async def test_classify_batch_with_metadata(mock_b):
 
 
 async def test_classify_batch_metadata_length_mismatch():
-    service = ClassificationService(lm_config=_lm_config())
+    service = ClassificationService(lm_client=_lm_client())
     with pytest.raises(ClassificationError, match="metadata length"):
         await service.classify_batch(["t1", "t2"], _categories(), metadata=[{"a": 1}])
 
@@ -141,7 +141,7 @@ async def test_knn_classify():
     store = _MockVectorStore()
     service = ClassificationService(
         embeddings=_MockEmbeddings(),
-        lm_config=_lm_config(),
+        lm_client=_lm_client(),
         vector_store=store,
     )
     result = await service.classify(
@@ -158,7 +158,7 @@ async def test_knn_no_results_raises():
     store = _MockVectorStore(results=[])
     service = ClassificationService(
         embeddings=_MockEmbeddings(),
-        lm_config=_lm_config(),
+        lm_client=_lm_client(),
         vector_store=store,
     )
     with pytest.raises(ClassificationError, match="No kNN results"):
@@ -174,7 +174,7 @@ async def test_hybrid_knn_confident_no_escalation(mock_b):
     store = _MockVectorStore(results=[{"category": "shipping"}] * 8 + [{"category": "billing"}] * 2)
     service = ClassificationService(
         embeddings=_MockEmbeddings(),
-        lm_config=_lm_config(),
+        lm_client=_lm_client(),
         vector_store=store,
     )
     result = await service.classify(
@@ -198,7 +198,7 @@ async def test_hybrid_escalates_to_llm(mock_b):
     )
     service = ClassificationService(
         embeddings=_MockEmbeddings(),
-        lm_config=_lm_config(),
+        lm_client=_lm_client(),
         vector_store=store,
     )
     result = await service.classify(
@@ -211,7 +211,7 @@ async def test_hybrid_escalates_to_llm(mock_b):
 
 
 async def test_hybrid_requires_embeddings():
-    service = ClassificationService(lm_config=_lm_config())
+    service = ClassificationService(lm_client=_lm_client())
     with pytest.raises(ClassificationError, match="requires embeddings"):
         await service.classify(
             "test",
@@ -221,7 +221,7 @@ async def test_hybrid_requires_embeddings():
 
 
 async def test_hybrid_requires_vector_store():
-    service = ClassificationService(embeddings=_MockEmbeddings(), lm_config=_lm_config())
+    service = ClassificationService(embeddings=_MockEmbeddings(), lm_client=_lm_client())
     with pytest.raises(ClassificationError, match="requires vector_store"):
         await service.classify(
             "test",
@@ -233,7 +233,7 @@ async def test_hybrid_requires_vector_store():
 async def test_hybrid_requires_knowledge_id():
     service = ClassificationService(
         embeddings=_MockEmbeddings(),
-        lm_config=_lm_config(),
+        lm_client=_lm_client(),
         vector_store=_MockVectorStore(),
     )
     with pytest.raises(ClassificationError, match="requires knn_knowledge_id"):
@@ -256,7 +256,7 @@ async def test_classify_sets_flags_low_confidence(mock_b):
             ]
         )
     )
-    service = ClassificationService(lm_config=_lm_config())
+    service = ClassificationService(lm_client=_lm_client())
     result = await service.classify_sets(
         "test",
         sets=[ClassificationSetDefinition("routing", _categories())],

@@ -15,7 +15,7 @@ from x64rag.reasoning.modules.compliance.models import (
 from x64rag.reasoning.modules.compliance.service import ComplianceService
 
 
-def _lm_config() -> LanguageModelClient:
+def _lm_client() -> LanguageModelClient:
     return LanguageModelClient(
         provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini", api_key="test-key"),
     )
@@ -50,7 +50,7 @@ def _mock_noncompliant_result() -> SimpleNamespace:
 async def test_check_compliant(mock_b):
     """Compliant text returns compliant=True with no violations."""
     mock_b.CheckCompliance = AsyncMock(return_value=_mock_compliant_result())
-    service = ComplianceService(lm_config=_lm_config())
+    service = ComplianceService(lm_client=_lm_client())
     result = await service.check(text="proper response", reference="policy doc")
     assert isinstance(result, ComplianceResult)
     assert result.compliant is True
@@ -62,7 +62,7 @@ async def test_check_compliant(mock_b):
 async def test_check_noncompliant(mock_b):
     """Non-compliant text returns compliant=False with violations."""
     mock_b.CheckCompliance = AsyncMock(return_value=_mock_noncompliant_result())
-    service = ComplianceService(lm_config=_lm_config())
+    service = ComplianceService(lm_client=_lm_client())
     result = await service.check(
         text="I'll give you 150% refund",
         reference="max refund is 100%",
@@ -84,7 +84,7 @@ async def test_check_noncompliant(mock_b):
 async def test_check_batch(mock_b):
     """Batch compliance runs concurrently."""
     mock_b.CheckCompliance = AsyncMock(return_value=_mock_compliant_result())
-    service = ComplianceService(lm_config=_lm_config())
+    service = ComplianceService(lm_client=_lm_client())
     results = await service.check_batch(
         [
             ("text 1", "policy 1"),
@@ -99,7 +99,7 @@ async def test_check_batch(mock_b):
 async def test_check_truncates_text(mock_b):
     """Text and reference are truncated per config."""
     mock_b.CheckCompliance = AsyncMock(return_value=_mock_compliant_result())
-    service = ComplianceService(lm_config=_lm_config())
+    service = ComplianceService(lm_client=_lm_client())
     await service.check(
         text="x" * 5000,
         reference="y" * 8000,
@@ -114,7 +114,7 @@ async def test_check_truncates_text(mock_b):
 async def test_check_raises_compliance_error(mock_b):
     """Service wraps unexpected exceptions in ComplianceError."""
     mock_b.CheckCompliance = AsyncMock(side_effect=RuntimeError("boom"))
-    service = ComplianceService(lm_config=_lm_config())
+    service = ComplianceService(lm_client=_lm_client())
     with pytest.raises(ComplianceError, match="Compliance check failed"):
         await service.check(text="test", reference="policy")
 
@@ -123,7 +123,7 @@ async def test_check_raises_compliance_error(mock_b):
 async def test_threshold_overrides_compliant(mock_b):
     """When threshold is set, compliant is based on score, not violations."""
     mock_b.CheckCompliance = AsyncMock(return_value=_mock_noncompliant_result())
-    service = ComplianceService(lm_config=_lm_config())
+    service = ComplianceService(lm_client=_lm_client())
     result = await service.check(text="test", reference="policy", config=ComplianceConfig(threshold=0.3))
     assert result.compliant is True
     assert len(result.violations) == 1
@@ -133,7 +133,7 @@ async def test_threshold_overrides_compliant(mock_b):
 async def test_threshold_fails_below(mock_b):
     """When score is below threshold, compliant is False."""
     mock_b.CheckCompliance = AsyncMock(return_value=_mock_compliant_result())
-    service = ComplianceService(lm_config=_lm_config())
+    service = ComplianceService(lm_client=_lm_client())
     result = await service.check(text="test", reference="policy", config=ComplianceConfig(threshold=0.99))
     assert result.compliant is False
 
@@ -142,7 +142,7 @@ async def test_threshold_fails_below(mock_b):
 async def test_no_threshold_uses_violations(mock_b):
     """Default behavior: compliant only when zero violations."""
     mock_b.CheckCompliance = AsyncMock(return_value=_mock_noncompliant_result())
-    service = ComplianceService(lm_config=_lm_config())
+    service = ComplianceService(lm_client=_lm_client())
     result = await service.check(text="test", reference="policy")
     assert result.compliant is False
     assert len(result.violations) == 1

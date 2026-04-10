@@ -21,7 +21,7 @@ def _chunk(chunk_id: str = "c1", score: float = 0.9) -> RetrievedChunk:
     )
 
 
-def _lm_config() -> LanguageModelClient:
+def _lm_client() -> LanguageModelClient:
     return LanguageModelClient(provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini"))
 
 
@@ -31,17 +31,17 @@ def _make_service(
     relevance_gate_enabled: bool = False,
     guiding_enabled: bool = False,
 ) -> GenerationService:
-    lm_config = _lm_config()
-    relevance_lm = lm_config if relevance_gate_enabled else None
+    lm_client = _lm_client()
+    relevance_lm = lm_client if relevance_gate_enabled else None
 
     return GenerationService(
-        lm_config=lm_config,
+        lm_client=lm_client,
         system_prompt="You are helpful.",
         grounding_enabled=grounding_enabled,
         grounding_threshold=grounding_threshold,
         relevance_gate_enabled=relevance_gate_enabled,
         guiding_enabled=guiding_enabled,
-        relevance_gate_lm_config=relevance_lm,
+        relevance_gate_lm_client=relevance_lm,
     )
 
 

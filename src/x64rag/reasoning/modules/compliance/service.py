@@ -17,8 +17,8 @@ logger = get_logger("compliance")
 class ComplianceService:
     """Check text compliance against reference documents."""
 
-    def __init__(self, lm_config: LanguageModelClient) -> None:
-        self._registry = build_registry(lm_config)
+    def __init__(self, lm_client: LanguageModelClient) -> None:
+        self._registry = build_registry(lm_client)
 
     async def check(
         self,

@@ -27,11 +27,11 @@ class ClassificationService:
     def __init__(
         self,
         embeddings: BaseEmbeddings | None = None,
-        lm_config: LanguageModelClient | None = None,
+        lm_client: LanguageModelClient | None = None,
         vector_store: BaseSemanticIndex | None = None,
     ) -> None:
         self._embeddings = embeddings
-        self._registry = build_registry(lm_config) if lm_config else None
+        self._registry = build_registry(lm_client) if lm_client else None
         self._vector_store = vector_store
 
     async def classify(
@@ -57,7 +57,7 @@ class ClassificationService:
     ) -> Classification:
         if cfg.strategy == "llm":
             if not self._registry:
-                raise ClassificationError("LLM classification requires lm_config")
+                raise ClassificationError("LLM classification requires lm_client")
             return await llm_classify(text, categories, self._registry, cfg.max_text_length)
 
         if not self._embeddings:
@@ -161,7 +161,7 @@ class ClassificationService:
         """Classify text against multiple category sets in one LLM call."""
         cfg = config or ClassificationConfig()
         if not self._registry:
-            raise ClassificationError("Multi-set classification requires lm_config")
+            raise ClassificationError("Multi-set classification requires lm_client")
 
         classifications = await llm_classify_sets(text, sets, self._registry, cfg.max_text_length)
 

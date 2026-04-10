@@ -25,14 +25,14 @@ class RetrievalJudgment:
 
     def __init__(
         self,
-        lm_config: LanguageModelClient,
+        lm_client: LanguageModelClient,
         knowledge_description: str | None = None,
     ) -> None:
-        self._lm_config = lm_config
+        self._lm_client = lm_client
         self._knowledge_description = knowledge_description or "A domain-specific knowledge base."
 
     async def should_retrieve(self, query: str) -> JudgmentResult:
-        registry = build_registry(self._lm_config)
+        registry = build_registry(self._lm_client)
 
         try:
             result = await b.JudgeRetrievalNecessity(

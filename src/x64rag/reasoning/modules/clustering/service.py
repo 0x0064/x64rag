@@ -23,10 +23,10 @@ class ClusteringService:
     def __init__(
         self,
         embeddings: BaseEmbeddings,
-        lm_config: LanguageModelClient | None = None,
+        lm_client: LanguageModelClient | None = None,
     ) -> None:
         self._embeddings = embeddings
-        self._registry = build_registry(lm_config) if lm_config else None
+        self._registry = build_registry(lm_client) if lm_client else None
 
     async def cluster_texts(
         self,
