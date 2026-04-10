@@ -30,7 +30,7 @@ from x64rag.retrieval.common.models import TreePage as TreePage
 from x64rag.retrieval.common.models import TreeSearchResult as TreeSearchResult
 from x64rag.retrieval.modules.evaluation.metrics import ExactMatch as ExactMatch
 from x64rag.retrieval.modules.evaluation.metrics import F1Score as F1Score
-from x64rag.retrieval.modules.evaluation.metrics import LLMJudge as LLMJudge
+from x64rag.retrieval.modules.evaluation.metrics import LLMJudgment as LLMJudgment
 from x64rag.retrieval.modules.evaluation.models import JudgmentResult as JudgmentResult
 from x64rag.retrieval.modules.evaluation.models import MetricResult as MetricResult
 from x64rag.retrieval.modules.evaluation.retrieval_metrics import RetrievalPrecision as RetrievalPrecision
@@ -54,8 +54,8 @@ from x64rag.retrieval.modules.ingestion.methods.vector import VectorIngestion as
 from x64rag.retrieval.modules.ingestion.vision.facade import Vision as Vision
 from x64rag.retrieval.modules.namespace import MethodNamespace as MethodNamespace
 from x64rag.retrieval.modules.retrieval.base import BaseRetrievalMethod as BaseRetrievalMethod
-from x64rag.retrieval.modules.retrieval.judging import BaseRetrievalJudge as BaseRetrievalJudge
-from x64rag.retrieval.modules.retrieval.judging import LLMRetrievalJudge as LLMRetrievalJudge
+from x64rag.retrieval.modules.retrieval.judging import BaseRetrievalJudgment as BaseRetrievalJudgment
+from x64rag.retrieval.modules.retrieval.judging import RetrievalJudgment as RetrievalJudgment
 from x64rag.retrieval.modules.retrieval.methods.document import DocumentRetrieval as DocumentRetrieval
 from x64rag.retrieval.modules.retrieval.methods.graph import GraphRetrieval as GraphRetrieval
 from x64rag.retrieval.modules.retrieval.methods.vector import VectorRetrieval as VectorRetrieval
@@ -144,11 +144,11 @@ __all__ = [
     "FilesystemDocumentStore",
     "ExactMatch",
     "F1Score",
-    "LLMJudge",
+    "LLMJudgment",
     "RetrievalRecall",
     "RetrievalPrecision",
-    "BaseRetrievalJudge",
-    "LLMRetrievalJudge",
+    "BaseRetrievalJudgment",
+    "RetrievalJudgment",
     "BaseChunkRefinement",
     "ExtractiveRefinement",
     "AbstractiveRefinement",

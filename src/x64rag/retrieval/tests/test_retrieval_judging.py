@@ -3,17 +3,17 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from x64rag.retrieval.common.language_model import LanguageModelClient, LanguageModelProvider
-from x64rag.retrieval.modules.retrieval.judging import LLMRetrievalJudge
+from x64rag.retrieval.modules.retrieval.judging import RetrievalJudgment
 
 
 def _make_lm_config():
     return LanguageModelClient(provider=LanguageModelProvider(provider="openai", model="gpt-4o-mini"))
 
 
-class TestLLMRetrievalJudge:
+class TestRetrievalJudgment:
     @pytest.fixture
     def judge(self):
-        return LLMRetrievalJudge(
+        return RetrievalJudgment(
             lm_config=_make_lm_config(),
             knowledge_description="Industrial air filtration manuals",
         )

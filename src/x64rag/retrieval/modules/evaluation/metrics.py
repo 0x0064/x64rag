@@ -66,7 +66,7 @@ class F1Score:
         return MetricResult(mean=sum(scores) / len(scores) if scores else 0.0, scores=scores)
 
 
-class LLMJudge:
+class LLMJudgment:
     """LLM-as-judge metric — rates answer quality via BAML JudgeAnswerQuality."""
 
     name: str = "llm_judge"

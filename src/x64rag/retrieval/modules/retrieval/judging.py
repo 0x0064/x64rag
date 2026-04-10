@@ -10,13 +10,13 @@ from x64rag.retrieval.modules.evaluation.models import JudgmentResult
 logger = get_logger("retrieval/judging")
 
 
-class BaseRetrievalJudge(Protocol):
+class BaseRetrievalJudgment(Protocol):
     """Protocol for retrieval necessity judges."""
 
     async def should_retrieve(self, query: str) -> JudgmentResult: ...
 
 
-class LLMRetrievalJudge:
+class RetrievalJudgment:
     """LLM-based retrieval necessity judge via BAML JudgeRetrievalNecessity.
 
     Classifies whether a query needs domain-specific retrieval or can be
