@@ -39,9 +39,7 @@ config = RagServerConfig(
         contextual_chunking=True,
     ),
     retrieval=RetrievalConfig(
-        reranker=Reranking(
-            LanguageModelProvider(provider="cohere", model="rerank-v3.5", api_key="your_api_key")
-        ),
+        reranker=Reranking(LanguageModelProvider(provider="cohere", model="rerank-v3.5", api_key="your_api_key")),
         query_rewriter=HyDeRewriting(
             lm_config=LanguageModelClient(
                 provider=LanguageModelProvider(

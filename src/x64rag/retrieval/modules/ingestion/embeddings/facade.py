@@ -20,8 +20,7 @@ class Embeddings:
                 self._impl = _CohereEmbeddings(provider)
             case _:
                 raise ConfigurationError(
-                    f"Unsupported embeddings provider: {provider.provider!r}. "
-                    f"Supported: openai, voyage, cohere."
+                    f"Unsupported embeddings provider: {provider.provider!r}. Supported: openai, voyage, cohere."
                 )
 
     @property
