@@ -38,6 +38,5 @@ client<llm> Default {
   retry_policy Retry3
   options {
     model "gpt-4o-mini"
-    api_key env.OPENAI_API_KEY
   }
 }
