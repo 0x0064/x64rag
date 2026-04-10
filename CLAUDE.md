@@ -37,7 +37,7 @@ src/x64rag/
 ├── cli.py               # Unified CLI: x64rag retrieval ... / x64rag reasoning ...
 ├── common/              # Shared across both SDKs
 │   ├── errors.py        # X64RagError, ConfigurationError (base classes)
-│   ├── language_model.py # LanguageModelConfig, build_registry (BAML ClientRegistry)
+│   ├── language_model.py # LanguageModelClient, LanguageModelProvider, build_registry (BAML ClientRegistry)
 │   ├── logging.py       # get_logger (env: X64RAG_LOG_ENABLED, X64RAG_LOG_LEVEL)
 │   ├── startup.py       # BAML version check (parameterized per SDK)
 │   ├── concurrency.py   # run_concurrent helper
@@ -47,11 +47,11 @@ src/x64rag/
 │   ├── server.py         # RagServer — main entry point, dynamic pipeline assembly
 │   ├── modules/
 │   │   ├── namespace.py  # MethodNamespace[T] — attribute access + iteration for pipeline methods
-│   │   ├── ingestion/    # base.py (BaseIngestionMethod protocol), methods/ (vector, document, graph, tree), chunk/ (chunker, parsers, batch), analyze/ (analyzed 3-phase), embeddings/, vision/, tree/
-│   │   ├── retrieval/    # base.py (BaseRetrievalMethod protocol), methods/ (vector, document, graph), search/ (service, fusion, reranking/, rewriting/), refinement/, enrich/, judging, tree/
+│   │   ├── ingestion/    # base.py (BaseIngestionMethod protocol), methods/ (vector, document, graph, tree), chunk/ (chunker, parsers, batch), analyze/ (analyzed 3-phase), embeddings/ (Embeddings facade), vision/ (Vision facade), tree/
+│   │   ├── retrieval/    # base.py (BaseRetrievalMethod protocol), methods/ (vector, document, graph), search/ (service, fusion, reranking/ (Reranking facade), rewriting/ (BaseQueryRewriting)), refinement/ (BaseChunkRefinement), enrich/, judging (RetrievalJudgment), tree/
 │   │   ├── generation/   # service, step, grounding, confidence
 │   │   ├── knowledge/    # manager (CRUD), migration
-│   │   └── evaluation/   # metrics (ExactMatch, F1, LLMJudge), retrieval_metrics
+│   │   └── evaluation/   # metrics (ExactMatch, F1, LLMJudgment), retrieval_metrics
 │   ├── stores/           # vector/ (Qdrant), metadata/ (SQLAlchemy), document/ (Postgres, filesystem), graph/ (Neo4j)
 │   ├── cli/              # Click commands, config loader, output formatters
 │   └── baml/             # baml_src/ (edit) + baml_client/ (generated, do not edit)
@@ -64,7 +64,7 @@ src/x64rag/
     │   ├── compliance/   # ComplianceService — policy violation checking
     │   ├── evaluation/   # EvaluationService — similarity + LLM judge scoring
     │   └── pipeline/     # Pipeline — sequential step composition
-    ├── protocols.py      # BaseEmbeddings, BaseVectorStore (structural typing)
+    ├── protocols.py      # BaseEmbeddings (from x64rag.common.protocols), BaseSemanticIndex (structural typing)
     ├── cli/              # Click commands, config loader, output formatters
     └── baml/             # baml_src/ (edit) + baml_client/ (generated, do not edit)
 ```
@@ -110,7 +110,7 @@ X64RagError (common base)
 │   ├── IngestionError, ParseError, EmptyDocumentError, EmbeddingError, IngestionInterruptedError, TreeIndexingError
 │   ├── RetrievalError, GenerationError, TreeSearchError
 │   └── StoreError, DuplicateSourceError, SourceNotFoundError
-└── AceError (reasoning)
+└── ReasoningError (reasoning)
     ├── AnalysisError, ClassificationError, ClusteringError
     ├── ComplianceError, EvaluationError
 ```
@@ -119,11 +119,12 @@ X64RagError (common base)
 
 All LLM calls go through BAML for structured output parsing, retry/fallback policies, and observability. Each SDK has its own `baml_src/` (source definitions) and `baml_client/` (auto-generated — never edit). After modifying `.baml` files, regenerate with `poe baml:generate:retrieval` or `poe baml:generate:reasoning`.
 
-`LanguageModelConfig` in `common/language_model.py` builds a BAML `ClientRegistry` with primary + optional fallback provider routing.
+`LanguageModelClient` in `common/language_model.py` builds a BAML `ClientRegistry` with primary + optional fallback provider routing. `LanguageModelProvider` configures a single provider endpoint (API key, base URL, model).
 
 ## Key Patterns
 
-- **Protocol-based abstraction** — No inheritance; `Protocol` classes define interfaces (`BaseEmbeddings`, `BaseVectorStore`, `BaseReranking`, `BaseRetrievalMethod`, `BaseIngestionMethod`, etc.). Any conforming object works.
+- **Protocol-based abstraction** — No inheritance; `Protocol` classes define interfaces (`BaseEmbeddings` (in `x64rag.common.protocols`), `BaseSemanticIndex`, `BaseReranking`, `BaseRetrievalMethod`, `BaseIngestionMethod`, `BaseQueryRewriting`, `BaseChunkRefinement`, `BaseRetrievalJudgment`, etc.). Any conforming object works.
+- **Facade pattern** — `Embeddings(LanguageModelProvider)`, `Vision(LanguageModelProvider)`, and `Reranking(LanguageModelProvider | LanguageModelClient)` are public facades that select the correct private provider implementation at runtime. Concrete providers (e.g. OpenAI, Voyage, Cohere) are private.
 - **Modular pipeline** — Retrieval and ingestion methods are pluggable. Services receive `list[BaseRetrievalMethod]` / `list[BaseIngestionMethod]` and dispatch generically. Methods carry `weight` and `top_k` configuration. Per-method error isolation (catch, log, continue).
 - **Async-first** — All I/O is async. Services use `async def`, stores use asyncpg/aiosqlite.
 - **Service pattern** — Each module has a `Service` class with dependencies injected via `__init__`.
@@ -141,11 +142,11 @@ All LLM calls go through BAML for structured output parsing, retry/fallback poli
 - pytest with `asyncio_mode = "auto"` — no `@pytest.mark.asyncio` needed
 - Tests use `AsyncMock` and `SimpleNamespace` for lightweight mocking
 - Tests in `tests/` subdirectories within each SDK + inline `test_*.py` in some modules
-- 534 tests total across both SDKs
+- 548 tests total across both SDKs
 
 ## Environment Variables
 
 - `X64RAG_LOG_ENABLED=true` / `X64RAG_LOG_LEVEL=DEBUG` — SDK logging
-- `X64RAG_PROVIDER`, `X64RAG_MODEL`, `X64RAG_API_KEY` — Override reasoning CLI provider/model/key
-- `BAML_LOG=info|warn|debug` — BAML runtime logging
+- `X64RAG_BAML_LOG=info|warn|debug` — BAML runtime logging (SDK sets `BAML_LOG` from this)
+- `BAML_LOG=info|warn|debug` — BAML runtime logging (direct override)
 - Config lives at `~/.config/x64rag/config.toml` + `.env`
