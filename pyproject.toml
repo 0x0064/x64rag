@@ -1,6 +1,6 @@
 [project]
 name = "x64rag"
-version = "0.2.0"
+version = "0.3.0"
 description = "Retrieval / Reasoning Augmented Generation (RAG) Python SDK"
 readme = "README.md"
 license = "MIT"
