@@ -12,7 +12,7 @@ DEFAULT_NUM_VARIANTS = 3
 
 
 @dataclass
-class MultiQueryRewriter:
+class MultiQueryRewriting:
     """Generate multiple query variants to improve recall.
 
     Produces 2-3 alternative formulations of the original query, each

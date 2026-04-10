@@ -1,7 +1,7 @@
 from typing import Protocol
 
 
-class BaseQueryRewriter(Protocol):
+class BaseQueryRewriting(Protocol):
     async def rewrite(self, query: str, conversation_context: str | None = None) -> list[str]:
         """Transform a single query into one or more retrieval queries.
 

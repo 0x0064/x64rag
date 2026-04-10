@@ -169,9 +169,9 @@ class TestLoadConfigProviders:
             os.environ.pop("OPENAI_API_KEY", None)
             os.environ.pop("ANTHROPIC_API_KEY", None)
             cfg = load_config(path)
-        from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewriter
+        from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewriting
 
-        assert isinstance(cfg.retrieval.query_rewriter, HyDeRewriter)
+        assert isinstance(cfg.retrieval.query_rewriter, HyDeRewriting)
 
     def test_rewriter_missing_provider_raises(self, tmp_path):
         path = _write_config(tmp_path, '\n[retrieval]\nrewriter = "hyde"\n')

@@ -64,10 +64,10 @@ from x64rag.retrieval.modules.retrieval.refinement.base import BaseChunkRefineme
 from x64rag.retrieval.modules.retrieval.refinement.extractive import ExtractiveRefinement as ExtractiveRefinement
 from x64rag.retrieval.modules.retrieval.search.reranking.base import BaseReranking as BaseReranking
 from x64rag.retrieval.modules.retrieval.search.reranking.facade import Reranking as Reranking
-from x64rag.retrieval.modules.retrieval.search.rewriting.base import BaseQueryRewriter as BaseQueryRewriter
-from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewriter as HyDeRewriter
-from x64rag.retrieval.modules.retrieval.search.rewriting.multi_query import MultiQueryRewriter as MultiQueryRewriter
-from x64rag.retrieval.modules.retrieval.search.rewriting.step_back import StepBackRewriter as StepBackRewriter
+from x64rag.retrieval.modules.retrieval.search.rewriting.base import BaseQueryRewriting as BaseQueryRewriting
+from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewriting as HyDeRewriting
+from x64rag.retrieval.modules.retrieval.search.rewriting.multi_query import MultiQueryRewriting as MultiQueryRewriting
+from x64rag.retrieval.modules.retrieval.search.rewriting.step_back import StepBackRewriting as StepBackRewriting
 from x64rag.retrieval.server import GenerationConfig as GenerationConfig
 from x64rag.retrieval.server import IngestionConfig as IngestionConfig
 from x64rag.retrieval.server import PersistenceConfig as PersistenceConfig
@@ -131,10 +131,10 @@ __all__ = [
     "LanguageModelProvider",
     "Reranking",
     "BaseReranking",
-    "BaseQueryRewriter",
-    "HyDeRewriter",
-    "MultiQueryRewriter",
-    "StepBackRewriter",
+    "BaseQueryRewriting",
+    "HyDeRewriting",
+    "MultiQueryRewriting",
+    "StepBackRewriting",
     "BaseGraphStore",
     "Neo4jGraphStore",
     "QdrantVectorStore",

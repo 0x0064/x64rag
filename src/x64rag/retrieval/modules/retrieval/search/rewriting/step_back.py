@@ -10,7 +10,7 @@ logger = get_logger("retrieval/rewriting/step_back")
 
 
 @dataclass
-class StepBackRewriter:
+class StepBackRewriting:
     """Generate a broader version of the query to retrieve contextual information.
 
     Produces a more general version of an overly-specific query so that search

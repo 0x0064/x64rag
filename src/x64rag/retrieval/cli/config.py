@@ -12,9 +12,9 @@ from x64rag.retrieval.modules.ingestion.embeddings.facade import Embeddings
 from x64rag.retrieval.modules.ingestion.embeddings.sparse.fastembed import FastEmbedSparseEmbeddings
 from x64rag.retrieval.modules.ingestion.vision.facade import Vision
 from x64rag.retrieval.modules.retrieval.search.reranking.facade import Reranking
-from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewriter
-from x64rag.retrieval.modules.retrieval.search.rewriting.multi_query import MultiQueryRewriter
-from x64rag.retrieval.modules.retrieval.search.rewriting.step_back import StepBackRewriter
+from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewriting
+from x64rag.retrieval.modules.retrieval.search.rewriting.multi_query import MultiQueryRewriting
+from x64rag.retrieval.modules.retrieval.search.rewriting.step_back import StepBackRewriting
 from x64rag.retrieval.server import (
     GenerationConfig,
     IngestionConfig,
@@ -139,9 +139,9 @@ def _build_query_rewriter(cfg: dict[str, Any]):
     )
 
     rewriters = {
-        "hyde": HyDeRewriter,
-        "multi_query": MultiQueryRewriter,
-        "step_back": StepBackRewriter,
+        "hyde": HyDeRewriting,
+        "multi_query": MultiQueryRewriting,
+        "step_back": StepBackRewriting,
     }
     rewriter_cls = rewriters.get(rewriter)
     if rewriter_cls is None:

@@ -10,7 +10,7 @@ logger = get_logger("retrieval/rewriting/hyde")
 
 
 @dataclass
-class HyDeRewriter:
+class HyDeRewriting:
     """Generate a hypothetical document passage to use as the search query.
 
     Uses HyDE (Hypothetical Document Embeddings) — the LLM writes a short

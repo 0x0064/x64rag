@@ -4,9 +4,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from baml_py import errors as baml_errors
 
 from x64rag.retrieval.common.models import RetrievedChunk
-from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewriter
-from x64rag.retrieval.modules.retrieval.search.rewriting.multi_query import MultiQueryRewriter
-from x64rag.retrieval.modules.retrieval.search.rewriting.step_back import StepBackRewriter
+from x64rag.retrieval.modules.retrieval.search.rewriting.hyde import HyDeRewriting
+from x64rag.retrieval.modules.retrieval.search.rewriting.multi_query import MultiQueryRewriting
+from x64rag.retrieval.modules.retrieval.search.rewriting.step_back import StepBackRewriting
 from x64rag.retrieval.modules.retrieval.search.service import RetrievalService
 from x64rag.retrieval.server import RetrievalConfig
 
@@ -14,7 +14,7 @@ from x64rag.retrieval.server import RetrievalConfig
 async def test_hyde_rewriter_returns_hypothetical_passage():
     """HyDE should return a single hypothetical passage from BAML."""
     mock_lm_config = MagicMock()
-    rewriter = HyDeRewriter(lm_config=mock_lm_config)
+    rewriter = HyDeRewriting(lm_config=mock_lm_config)
 
     mock_result = MagicMock()
     mock_result.passage = "The 20x25x4 MERV 13 filter has an initial pressure drop of 0.25 inches WG."
@@ -36,7 +36,7 @@ async def test_hyde_rewriter_returns_hypothetical_passage():
 async def test_hyde_rewriter_with_conversation_context():
     """HyDE should include conversation context in the BAML call."""
     mock_lm_config = MagicMock()
-    rewriter = HyDeRewriter(lm_config=mock_lm_config)
+    rewriter = HyDeRewriting(lm_config=mock_lm_config)
 
     mock_result = MagicMock()
     mock_result.passage = "Hypothetical answer about filters."
@@ -61,7 +61,7 @@ async def test_hyde_rewriter_with_conversation_context():
 async def test_multi_query_rewriter_returns_variants():
     """Multi-query should return the configured number of variants."""
     mock_lm_config = MagicMock()
-    rewriter = MultiQueryRewriter(lm_config=mock_lm_config, num_variants=3)
+    rewriter = MultiQueryRewriting(lm_config=mock_lm_config, num_variants=3)
 
     mock_result = MagicMock()
     mock_result.variants = [
@@ -86,14 +86,14 @@ async def test_multi_query_rewriter_returns_variants():
 async def test_multi_query_default_num_variants():
     """Multi-query should default to 3 variants."""
     mock_lm_config = MagicMock()
-    rewriter = MultiQueryRewriter(lm_config=mock_lm_config)
+    rewriter = MultiQueryRewriting(lm_config=mock_lm_config)
     assert rewriter.num_variants == 3
 
 
 async def test_multi_query_passes_num_variants_to_baml():
     """Multi-query should pass num_variants to the BAML call."""
     mock_lm_config = MagicMock()
-    rewriter = MultiQueryRewriter(lm_config=mock_lm_config, num_variants=2)
+    rewriter = MultiQueryRewriting(lm_config=mock_lm_config, num_variants=2)
 
     mock_result = MagicMock()
     mock_result.variants = ["variant 1", "variant 2"]
@@ -114,7 +114,7 @@ async def test_multi_query_passes_num_variants_to_baml():
 async def test_step_back_rewriter_returns_broader_query():
     """Step-back should return a single broader query."""
     mock_lm_config = MagicMock()
-    rewriter = StepBackRewriter(lm_config=mock_lm_config)
+    rewriter = StepBackRewriting(lm_config=mock_lm_config)
 
     mock_result = MagicMock()
     mock_result.broader_query = "MERV 13 filter specifications and performance ratings"
@@ -136,7 +136,7 @@ async def test_step_back_rewriter_returns_broader_query():
 async def test_step_back_rewriter_with_context():
     """Step-back should include conversation context in the BAML call."""
     mock_lm_config = MagicMock()
-    rewriter = StepBackRewriter(lm_config=mock_lm_config)
+    rewriter = StepBackRewriting(lm_config=mock_lm_config)
 
     mock_result = MagicMock()
     mock_result.broader_query = "Air filter performance overview"
@@ -161,7 +161,7 @@ async def test_step_back_rewriter_with_context():
 async def test_hyde_returns_empty_on_baml_validation_error():
     """HyDE should return [] when BAML fails to parse the LLM response."""
     mock_lm_config = MagicMock()
-    rewriter = HyDeRewriter(lm_config=mock_lm_config)
+    rewriter = HyDeRewriting(lm_config=mock_lm_config)
 
     with (
         patch("x64rag.retrieval.modules.retrieval.search.rewriting.hyde.b") as mock_b,
@@ -182,7 +182,7 @@ async def test_hyde_returns_empty_on_baml_validation_error():
 async def test_multi_query_returns_empty_on_exception():
     """Multi-query should return [] on any exception."""
     mock_lm_config = MagicMock()
-    rewriter = MultiQueryRewriter(lm_config=mock_lm_config)
+    rewriter = MultiQueryRewriting(lm_config=mock_lm_config)
 
     with (
         patch("x64rag.retrieval.modules.retrieval.search.rewriting.multi_query.b") as mock_b,
@@ -199,7 +199,7 @@ async def test_multi_query_returns_empty_on_exception():
 async def test_step_back_returns_empty_on_exception():
     """Step-back should return [] on any exception."""
     mock_lm_config = MagicMock()
-    rewriter = StepBackRewriter(lm_config=mock_lm_config)
+    rewriter = StepBackRewriting(lm_config=mock_lm_config)
 
     with (
         patch("x64rag.retrieval.modules.retrieval.search.rewriting.step_back.b") as mock_b,

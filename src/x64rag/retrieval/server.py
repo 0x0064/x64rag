@@ -36,7 +36,7 @@ from x64rag.retrieval.modules.retrieval.methods.graph import GraphRetrieval
 from x64rag.retrieval.modules.retrieval.methods.vector import VectorRetrieval
 from x64rag.retrieval.modules.retrieval.refinement.base import BaseChunkRefinement
 from x64rag.retrieval.modules.retrieval.search.reranking.base import BaseReranking
-from x64rag.retrieval.modules.retrieval.search.rewriting.base import BaseQueryRewriter
+from x64rag.retrieval.modules.retrieval.search.rewriting.base import BaseQueryRewriting
 from x64rag.retrieval.modules.retrieval.search.service import RetrievalService
 from x64rag.retrieval.stores.document.base import BaseDocumentStore
 from x64rag.retrieval.stores.graph.base import BaseGraphStore
@@ -92,7 +92,7 @@ class IngestionConfig:
 class RetrievalConfig:
     top_k: int = 5
     reranker: BaseReranking | None = None
-    query_rewriter: BaseQueryRewriter | None = None
+    query_rewriter: BaseQueryRewriting | None = None
     bm25_enabled: bool = False
     bm25_max_indexes: int = 16
     bm25_tokenizer: Callable[[str], list[str]] | None = None

@@ -7,7 +7,7 @@ from x64rag.retrieval.modules.retrieval.base import BaseRetrievalMethod
 from x64rag.retrieval.modules.retrieval.refinement.base import BaseChunkRefinement
 from x64rag.retrieval.modules.retrieval.search.fusion import reciprocal_rank_fusion
 from x64rag.retrieval.modules.retrieval.search.reranking.base import BaseReranking
-from x64rag.retrieval.modules.retrieval.search.rewriting.base import BaseQueryRewriter
+from x64rag.retrieval.modules.retrieval.search.rewriting.base import BaseQueryRewriting
 
 logger = get_logger("retrieval.search.service")
 
@@ -19,7 +19,7 @@ class RetrievalService:
         reranking: BaseReranking | None = None,
         top_k: int = 5,
         source_type_weights: dict[str, float] | None = None,
-        query_rewriter: BaseQueryRewriter | None = None,
+        query_rewriter: BaseQueryRewriting | None = None,
         chunk_refiner: BaseChunkRefinement | None = None,
     ) -> None:
         self._retrieval_methods = retrieval_methods
