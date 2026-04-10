@@ -10,11 +10,11 @@ Shows how to:
 import asyncio
 
 from x64rag.retrieval import (
+    Embeddings,
     GenerationConfig,
     IngestionConfig,
-    LanguageModelClientConfig,
-    LanguageModelConfig,
-    OpenAIEmbeddings,
+    LanguageModelClient,
+    LanguageModelProvider,
     PersistenceConfig,
     PostgresDocumentStore,
     QdrantVectorStore,
@@ -29,12 +29,14 @@ config = RagServerConfig(
         document_store=PostgresDocumentStore(url="postgresql://user:pass@localhost:5432/rag"),
     ),
     ingestion=IngestionConfig(
-        embeddings=OpenAIEmbeddings(model="text-embedding-3-small", api_key="your_api_key"),
+        embeddings=Embeddings(
+            LanguageModelProvider(provider="openai", model="text-embedding-3-small", api_key="your_api_key")
+        ),
     ),
     retrieval=RetrievalConfig(top_k=10),
     generation=GenerationConfig(
-        lm_config=LanguageModelConfig(
-            client=LanguageModelClientConfig(
+        lm_config=LanguageModelClient(
+            provider=LanguageModelProvider(
                 provider="anthropic", model="claude-sonnet-4-20250514", api_key="your_api_key"
             ),
         ),

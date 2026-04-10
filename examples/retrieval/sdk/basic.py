@@ -1,22 +1,22 @@
 import asyncio
 
 from x64rag.retrieval import (
-    AnthropicVision,
-    CohereReranking,
+    Embeddings,
     FastEmbedSparseEmbeddings,
     GenerationConfig,
-    HyDeRewriter,
+    HyDeRewriting,
     IngestionConfig,
-    LanguageModelClientConfig,
-    LanguageModelConfig,
-    OpenAIEmbeddings,
+    LanguageModelClient,
+    LanguageModelProvider,
     PersistenceConfig,
     PostgresDocumentStore,
     QdrantVectorStore,
     RagServer,
     RagServerConfig,
+    Reranking,
     RetrievalConfig,
     SQLAlchemyMetadataStore,
+    Vision,
 )
 
 config = RagServerConfig(
@@ -26,8 +26,12 @@ config = RagServerConfig(
         document_store=PostgresDocumentStore(url="postgresql://user:pass@localhost:5432/rag"),
     ),
     ingestion=IngestionConfig(
-        embeddings=OpenAIEmbeddings(model="text-embedding-3-small", api_key="your_api_key"),
-        vision=AnthropicVision(model="claude-sonnet-4-20250514", api_key="your_api_key"),
+        embeddings=Embeddings(
+            LanguageModelProvider(provider="openai", model="text-embedding-3-small", api_key="your_api_key")
+        ),
+        vision=Vision(
+            LanguageModelProvider(provider="anthropic", model="claude-sonnet-4-20250514", api_key="your_api_key")
+        ),
         sparse_embeddings=FastEmbedSparseEmbeddings(),
         chunk_size=500,
         chunk_overlap=50,
@@ -35,10 +39,12 @@ config = RagServerConfig(
         contextual_chunking=True,
     ),
     retrieval=RetrievalConfig(
-        reranker=CohereReranking(model="rerank-v3.5", api_key="your_api_key"),
-        query_rewriter=HyDeRewriter(
-            lm_config=LanguageModelConfig(
-                client=LanguageModelClientConfig(
+        reranker=Reranking(
+            LanguageModelProvider(provider="cohere", model="rerank-v3.5", api_key="your_api_key")
+        ),
+        query_rewriter=HyDeRewriting(
+            lm_config=LanguageModelClient(
+                provider=LanguageModelProvider(
                     provider="anthropic",
                     model="claude-haiku-4-5-20251001",
                     api_key="your_api_key",
@@ -49,8 +55,8 @@ config = RagServerConfig(
         source_type_weights={"manual": 1.0, "drawing": 0.9, "transcript": 0.5, "community": 0.8},
     ),
     generation=GenerationConfig(
-        lm_config=LanguageModelConfig(
-            client=LanguageModelClientConfig(
+        lm_config=LanguageModelClient(
+            provider=LanguageModelProvider(
                 provider="anthropic", model="claude-sonnet-4-20250514", api_key="your_api_key"
             ),
         ),
@@ -62,8 +68,8 @@ config = RagServerConfig(
         grounding_enabled=True,
         grounding_threshold=0.5,
         relevance_gate_enabled=True,
-        relevance_gate_model=LanguageModelConfig(
-            client=LanguageModelClientConfig(
+        relevance_gate_model=LanguageModelClient(
+            provider=LanguageModelProvider(
                 provider="anthropic",
                 model="claude-haiku-4-5-20251001",
                 api_key="your_api_key",

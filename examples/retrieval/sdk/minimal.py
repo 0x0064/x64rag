@@ -1,11 +1,11 @@
 import asyncio
 
 from x64rag.retrieval import (
+    Embeddings,
     GenerationConfig,
     IngestionConfig,
-    LanguageModelClientConfig,
-    LanguageModelConfig,
-    OpenAIEmbeddings,
+    LanguageModelClient,
+    LanguageModelProvider,
     PersistenceConfig,
     QdrantVectorStore,
     RagServer,
@@ -17,11 +17,13 @@ config = RagServerConfig(
         vector_store=QdrantVectorStore(url="http://localhost:6333", collection="docs"),
     ),
     ingestion=IngestionConfig(
-        embeddings=OpenAIEmbeddings(model="text-embedding-3-small", api_key="your_api_key"),
+        embeddings=Embeddings(
+            LanguageModelProvider(provider="openai", model="text-embedding-3-small", api_key="your_api_key")
+        ),
     ),
     generation=GenerationConfig(
-        lm_config=LanguageModelConfig(
-            client=LanguageModelClientConfig(
+        lm_config=LanguageModelClient(
+            provider=LanguageModelProvider(
                 provider="anthropic", model="claude-sonnet-4-20250514", api_key="your_api_key"
             ),
         ),
