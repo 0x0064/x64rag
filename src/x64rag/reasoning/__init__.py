@@ -4,13 +4,13 @@ from x64rag.reasoning.common.startup import check_baml as _check_baml
 
 _check_baml()
 
-from x64rag.reasoning.common.errors import AceError as AceError
 from x64rag.reasoning.common.errors import AnalysisError as AnalysisError
 from x64rag.reasoning.common.errors import ClassificationError as ClassificationError
 from x64rag.reasoning.common.errors import ClusteringError as ClusteringError
 from x64rag.reasoning.common.errors import ComplianceError as ComplianceError
 from x64rag.reasoning.common.errors import ConfigurationError as ConfigurationError
 from x64rag.reasoning.common.errors import EvaluationError as EvaluationError
+from x64rag.reasoning.common.errors import ReasoningError as ReasoningError
 from x64rag.reasoning.common.language_model import LanguageModelClient as LanguageModelClient
 from x64rag.reasoning.common.language_model import LanguageModelProvider as LanguageModelProvider
 from x64rag.reasoning.modules.analysis.models import AnalysisConfig as AnalysisConfig
@@ -60,13 +60,13 @@ from x64rag.reasoning.protocols import BaseEmbeddings as BaseEmbeddings
 from x64rag.reasoning.protocols import BaseSemanticIndex as BaseSemanticIndex
 
 __all__ = [
-    "AceError",
     "AnalysisError",
     "ClassificationError",
     "ClusteringError",
     "ComplianceError",
     "ConfigurationError",
     "EvaluationError",
+    "ReasoningError",
     "LanguageModelClient",
     "LanguageModelProvider",
     "BaseEmbeddings",

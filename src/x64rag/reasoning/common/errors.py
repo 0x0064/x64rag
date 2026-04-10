@@ -2,25 +2,25 @@ from x64rag.common.errors import ConfigurationError as ConfigurationError
 from x64rag.common.errors import X64RagError
 
 
-class AceError(X64RagError):
+class ReasoningError(X64RagError):
     """Base exception for reasoning SDK errors."""
 
 
-class ClassificationError(AceError):
+class ClassificationError(ReasoningError):
     """Error during text classification."""
 
 
-class ClusteringError(AceError):
+class ClusteringError(ReasoningError):
     """Error during text clustering."""
 
 
-class EvaluationError(AceError):
+class EvaluationError(ReasoningError):
     """Error during evaluation."""
 
 
-class ComplianceError(AceError):
+class ComplianceError(ReasoningError):
     """Error during compliance checking."""
 
 
-class AnalysisError(AceError):
+class AnalysisError(ReasoningError):
     """Error during text analysis."""

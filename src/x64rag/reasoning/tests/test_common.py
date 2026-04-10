@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from x64rag.reasoning.common.concurrency import run_concurrent
-from x64rag.reasoning.common.errors import AceError, ConfigurationError
+from x64rag.reasoning.common.errors import ConfigurationError, ReasoningError
 from x64rag.reasoning.common.language_model import LanguageModelClient, LanguageModelProvider, build_registry
 
 
@@ -155,11 +155,11 @@ def test_ace_error_is_base():
         EvaluationError,
     )
 
-    assert issubclass(AnalysisError, AceError)
-    assert issubclass(ClassificationError, AceError)
-    assert issubclass(ClusteringError, AceError)
-    assert issubclass(ComplianceError, AceError)
-    assert issubclass(EvaluationError, AceError)
+    assert issubclass(AnalysisError, ReasoningError)
+    assert issubclass(ClassificationError, ReasoningError)
+    assert issubclass(ClusteringError, ReasoningError)
+    assert issubclass(ComplianceError, ReasoningError)
+    assert issubclass(EvaluationError, ReasoningError)
     from x64rag.common.errors import X64RagError
 
     assert issubclass(ConfigurationError, X64RagError)
