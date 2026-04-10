@@ -10,14 +10,15 @@ Modular retrieval-augmented generation with pluggable pipeline methods. No manda
 
 ```python
 from x64rag.retrieval import RagServer, RagServerConfig, PersistenceConfig, IngestionConfig
-from x64rag.retrieval import QdrantVectorStore, OpenAIEmbeddings
+from x64rag.retrieval import QdrantVectorStore, Embeddings
+from x64rag import LanguageModelProvider
 
 config = RagServerConfig(
     persistence=PersistenceConfig(
         vector_store=QdrantVectorStore(url="http://localhost:6333", collection="docs"),
     ),
     ingestion=IngestionConfig(
-        embeddings=OpenAIEmbeddings(api_key="...", model="text-embedding-3-small"),
+        embeddings=Embeddings(LanguageModelProvider(provider="openai", model="text-embedding-3-small", api_key="...")),
     ),
 )
 
@@ -56,10 +57,10 @@ Analysis, classification, compliance, evaluation, clustering, and pipeline compo
 
 ```python
 from x64rag.reasoning import AnalysisService, AnalysisConfig, DimensionDefinition
-from x64rag.common.language_model import LanguageModelConfig, LanguageModelClientConfig
+from x64rag import LanguageModelClient, LanguageModelProvider
 
-lm = LanguageModelConfig(
-    client=LanguageModelClientConfig(provider="anthropic", model="claude-sonnet-4-20250514", api_key="..."),
+lm = LanguageModelClient(
+    provider=LanguageModelProvider(provider="anthropic", model="claude-sonnet-4-20250514", api_key="..."),
 )
 
 analyzer = AnalysisService(lm_config=lm)
@@ -118,23 +119,27 @@ Framework orchestrators provide abstractions over LLM calls, prompt chains, and 
 
 All LLM calls go through [BAML](https://docs.boundaryml.com/) for structured output parsing, retry/fallback policies, and observability.
 
-**Boundary Studio** — Set `boundary_api_key` in any `LanguageModelConfig` to enable automatic cloud tracing with token counts, latency, and function-level tracking.
+**Boundary Studio** — Set `boundary_api_key` on any `LanguageModelClient` to enable automatic cloud tracing with token counts, latency, and function-level tracking.
 
 **Programmatic** — Use `baml_py.Collector` for in-process token usage tracking.
 
-## Env Variables
+## SDK Env Variables
+
+Read by the SDK when used as a library.
+
+```bash
+X64RAG_LOG_ENABLED=false    # true / false
+X64RAG_LOG_LEVEL=INFO       # DEBUG, INFO, WARNING, ERROR
+X64RAG_BAML_LOG=warn        # info, warn, debug — BAML runtime log level
+```
+
+## CLI Env Variables
+
+Used only by the `x64rag retrieval` / `x64rag reasoning` command-line tools. The SDK library never reads these directly — pass API keys explicitly via `LanguageModelProvider(api_key=...)` when using the SDK programmatically.
 
 ```bash
 OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
 COHERE_API_KEY=
 VOYAGE_API_KEY=
-
-X64RAG_PROVIDER=
-X64RAG_MODEL=
-X64RAG_API_KEY=
-
-X64RAG_LOG_ENABLED=false    # true / false
-X64RAG_LOG_LEVEL=INFO       # DEBUG, INFO, WARNING, ERROR
-BAML_LOG=warn               # info, warn, debug
 ```
