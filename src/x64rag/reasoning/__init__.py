@@ -1,4 +1,4 @@
-"""RAC — Reasoning-Augmented Classification SDK."""
+"""Reasoning services — analysis, classification, clustering, compliance, evaluation, pipelines."""
 
 from x64rag.reasoning.common.startup import check_baml as _check_baml
 
@@ -56,8 +56,6 @@ from x64rag.reasoning.modules.pipeline.models import EvaluateStep as EvaluateSte
 from x64rag.reasoning.modules.pipeline.models import PipelineResult as PipelineResult
 from x64rag.reasoning.modules.pipeline.models import PipelineServices as PipelineServices
 from x64rag.reasoning.modules.pipeline.service import Pipeline as Pipeline
-from x64rag.reasoning.protocols import BaseEmbeddings as BaseEmbeddings
-from x64rag.reasoning.protocols import BaseSemanticIndex as BaseSemanticIndex
 
 __all__ = [
     "AnalysisError",
@@ -69,8 +67,6 @@ __all__ = [
     "ReasoningError",
     "LanguageModelClient",
     "LanguageModelProvider",
-    "BaseEmbeddings",
-    "BaseSemanticIndex",
     "AnalysisConfig",
     "AnalysisResult",
     "AnalysisService",
